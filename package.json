@@ -13,6 +13,9 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist"
+  ],
   "directories": {
     "test": "test"
   },
