@@ -4,11 +4,25 @@
   ],
   "imageSize": 100,
   "commit": false,
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "fraxken",
+      "name": "Thomas.G",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4438263?v=4",
+      "profile": "https://github.com/fraxken",
+      "contributions": [
+        "code",
+        "security",
+        "doc"
+      ]
+    }
+  ],
   "contributorsPerLine": 7,
   "projectName": "loki",
   "projectOwner": "MyUnisoft",
   "repoType": "github",
   "repoHost": "https://github.com",
-  "skipCi": true
+  "skipCi": true,
+  "commitType": "docs",
+  "commitConvention": "angular"
 }
