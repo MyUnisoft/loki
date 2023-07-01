@@ -1,8 +1,24 @@
 // Import Third-party Dependencies
 import dayjs from "dayjs";
+import ms from "ms";
 
 // Import Internal Dependencies
-import { QueryRangeResponse } from "./index.js";
+import { QueryRangeResponse } from "./types.js";
+
+export function durationToUnixTimestamp(duration: string | number): string {
+  if (typeof duration === "number") {
+    return String(duration);
+  }
+
+  return dayjs()
+    .subtract(ms(duration), "milliseconds")
+    .unix()
+    .toString();
+}
+
+export function escapeStringRegExp(str: string): string {
+  return str.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
+}
 
 export function transformStreamValue(
   value: [unixEpoch: string, log: string]
