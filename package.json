@@ -47,7 +47,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@myunisoft/httpie": "^1.11.0",
+    "@myunisoft/httpie": "^2.0.0",
     "dayjs": "^1.11.8",
     "ms": "^2.1.3"
   }
