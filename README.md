@@ -3,7 +3,7 @@
 </h1></p>
 
 <p align="center">
-  Node.js Grafana Loki SDK
+  Node.js Grafana Loki SDK (WIP)
 </p>
 
 <p align="center">
@@ -29,9 +29,9 @@ $ yarn add @myunisoft/loki
 ## 📚 Usage
 
 ```ts
-import GrafanaLokiSDK from "../dist/index.js";
+import { GrafanaLoki } from "@myunisoft/loki";
 
-const api = new GrafanaLokiSDK({
+const api = new GrafanaLoki({
   // Note: if not provided, it will load process.env.GRAFANA_API_TOKEN
   apiToken: "...",
   remoteApiURL: "https://name.loki.com"
@@ -40,15 +40,60 @@ const api = new GrafanaLokiSDK({
 const logs = await api.queryRange(
   `{app="serviceName", env="production"}`,
   {
-    range: "1d",
+    start: "1d",
     limit: 200
   }
 );
 console.log(logs);
 ```
 
+queryRange options is described by the following TypeScript interface
+```ts
+export interface LokiQueryOptions<T> {
+  /**
+   * @default 100
+   * */
+  limit?: number;
+  start?: number | string;
+  end?: number | string;
+  since?: string;
+  parser?: LogParserLike<T>;
+}
+```
+
+<em>start</em> and <em>end</em> arguments can be either a unix timestamp or a duration like `6h`.
+
 ## API
-TBC
+
+You can provide a custom parser to queryRange (by default it inject a NoopParser doing nothing).
+
+```ts
+import { LogParser } from "@myunisoft/loki";
+
+interface CustomParser {
+  date: string;
+  requestId: string;
+  endpoint: string;
+  method: string;
+  statusCode: number;
+}
+
+const customParser = new LogParser<CustomParser>(
+  "<date>: [req-<requestId:word>] <endpoint> <method:httpMethod> <statusCode:httpStatusCode>"
+);
+
+const logs = await api.queryRange(
+  `{app="serviceName", env="production"}`,
+  {
+    parser: customParser
+  }
+);
+for (const data of logs) {
+  console.log(`requestId: ${data.requestId}`);
+}
+```
+
+The parser will automatically escape and generate a RegExp with capture group (with a syntax similar to Loki pattern).
 
 ## Contributors ✨
 
