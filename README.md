@@ -7,9 +7,21 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/MyUnisoft/loki"><img src="https://img.shields.io/github/package-json/v/MyUnisoft/loki?style=flat-square" alt="npm version"></a>
-    <a href="https://github.com/MyUnisoft/loki"><img src="https://img.shields.io/github/license/MyUnisoft/loki?style=flat-square" alt="license"></a>
-    <a href="https://github.com/MyUnisoft/loki"><img src="https://img.shields.io/github/languages/code-size/MyUnisoft/loki?style=flat-square" alt="size"></a>
+    <a href="https://github.com/MyUnisoft/loki">
+      <img src="https://img.shields.io/github/package-json/v/MyUnisoft/loki?style=for-the-badge" alt="npm version">
+    </a>
+    <a href="https://github.com/MyUnisoft/loki">
+      <img src="https://img.shields.io/github/license/MyUnisoft/loki?style=for-the-badge" alt="license">
+    </a>
+    <a href="https://api.securityscorecards.dev/projects/github.com/MyUnisoft/loki">
+      <img src="https://api.securityscorecards.dev/projects/github.com/MyUnisoft/loki/badge?style=for-the-badge" alt="ossf scorecard">
+    </a>
+    <a href="https://github.com/MyUnisoft/loki/actions?query=workflow%3A%22Node.js+CI%22">
+      <img src="https://img.shields.io/github/actions/workflow/status/MyUnisoft/loki/node.js.yml?style=for-the-badge" alt="github ci workflow">
+    </a>
+    <a href="https://github.com/MyUnisoft/loki">
+      <img src="https://img.shields.io/github/languages/code-size/MyUnisoft/loki?style=for-the-badge" alt="size">
+    </a>
 </p>
 
 ## 🚧 Requirements
