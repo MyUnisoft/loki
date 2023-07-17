@@ -42,3 +42,13 @@ export interface QueryRangeResponse {
     };
   }
 }
+
+export interface LabelResponse {
+  status: "success";
+  data: string[];
+}
+
+export interface LabelValuesResponse {
+  status: "success";
+  data: string[];
+}

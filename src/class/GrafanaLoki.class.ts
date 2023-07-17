@@ -3,7 +3,7 @@ import * as httpie from "@myunisoft/httpie";
 
 // Import Internal Dependencies
 import * as utils from "../utils.js";
-import { QueryRangeResponse } from "../types.js";
+import { LabelResponse, LabelValuesResponse, QueryRangeResponse } from "../types.js";
 import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
 
 export interface LokiQueryOptions<T> {
@@ -26,6 +26,40 @@ export interface GrafanaLokiConstructorOptions {
    * Remote Grafana root API URL
    */
   remoteApiURL: string | URL;
+}
+
+export interface LokiLabelsOptions {
+  /**
+   * The start time for the query as
+   * - a nanosecond Unix epoch.
+   * - a duration (i.e "2h")
+   *
+   * Default to 6 hours ago.
+   */
+  start?: number | string;
+  /**
+   * The end time for the query as
+   * - a nanosecond Unix epoch.
+   * - a duration (i.e "2h")
+   *
+   * Default to now
+   */
+  end?: number | string;
+  /**
+   * A duration used to calculate start relative to end. If end is in the future, start is calculated as this duration before now.
+   *
+   * Any value specified for start supersedes this parameter.
+   */
+  since?: string;
+}
+
+export interface LokiLabelValuesOptions extends LokiLabelsOptions {
+  /**
+   * A set of log stream selector that selects the streams to match and return label values for <name>.
+   *
+   * Example: {"app": "myapp", "environment": "dev"}
+   */
+  query?: string;
 }
 
 export class GrafanaLoki {
@@ -83,5 +117,46 @@ export class GrafanaLoki {
     return parser.executeOnLogs(
       utils.inlineLogs(data)
     );
+  }
+
+  async labels(options: LokiLabelsOptions = {}): Promise<string[]> {
+    const uri = new URL("loki/api/v1/labels", this.remoteApiURL);
+    if (options.start) {
+      uri.searchParams.set("start", utils.durationToUnixTimestamp(options.start));
+    }
+    if (options.end) {
+      uri.searchParams.set("end", utils.durationToUnixTimestamp(options.end));
+    }
+    if (options.since) {
+      uri.searchParams.set("since", options.since);
+    }
+
+    const { data: labels } = await httpie.get<LabelResponse>(
+      uri, this.httpOptions
+    );
+
+    return labels.data;
+  }
+
+  async labelValues(label: string, options: LokiLabelValuesOptions = {}): Promise<string[]> {
+    const uri = new URL(`loki/api/v1/label/${label}/values`, this.remoteApiURL);
+    if (options.start) {
+      uri.searchParams.set("start", utils.durationToUnixTimestamp(options.start));
+    }
+    if (options.end) {
+      uri.searchParams.set("end", utils.durationToUnixTimestamp(options.end));
+    }
+    if (options.since) {
+      uri.searchParams.set("since", options.since);
+    }
+    if (options.query) {
+      uri.searchParams.set("query", options.query);
+    }
+
+    const { data: labelValues } = await httpie.get<LabelValuesResponse>(
+      uri, this.httpOptions
+    );
+
+    return labelValues.data;
   }
 }
