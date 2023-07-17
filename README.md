@@ -77,6 +77,8 @@ export interface LokiQueryOptions<T> {
 
 ## API
 
+### queryRange
+
 You can provide a custom parser to queryRange (by default it inject a NoopParser doing nothing).
 
 ```ts
@@ -106,6 +108,82 @@ for (const data of logs) {
 ```
 
 The parser will automatically escape and generate a RegExp with capture group (with a syntax similar to Loki pattern).
+
+### labels
+
+```ts
+const labels = await api.labels();
+```
+
+`labels(options = {})` retrieves the list of known labels within a given time span. Loki may use a larger time span than the one specified. It accepts the following options:
+
+```ts
+interface LokiLabelsOptions {
+  /**
+   * The start time for the query as
+   * - a nanosecond Unix epoch.
+   * - a duration (i.e "2h")
+   *
+   * Default to 6 hours ago.
+   */
+  start?: number | string;
+  /**
+   * The end time for the query as
+   * - a nanosecond Unix epoch.
+   * - a duration (i.e "2h")
+   *
+   * Default to now
+   */
+  end?: number | string;
+  /**
+   * A duration used to calculate start relative to end. If end is in the future, start is calculated as this duration before now.
+   *
+   * Any value specified for start supersedes this parameter.
+   */
+  since?: string;
+}
+```
+
+### labelValues
+
+```ts
+const appLabelValues = await api.labelValues("app");
+```
+
+`labelValues(label, options = {})` retrieves the list of known values for a given label within a given time span. Loki may use a larger time span than the one specified.
+
+```ts
+interface LokiLabelValueOptions {
+  /**
+   * The start time for the query as
+   * - a nanosecond Unix epoch.
+   * - a duration (i.e "2h")
+   *
+   * Default to 6 hours ago.
+   */
+  start?: number | string;
+  /**
+   * The end time for the query as
+   * - a nanosecond Unix epoch.
+   * - a duration (i.e "2h")
+   *
+   * Default to now
+   */
+  end?: number | string;
+  /**
+   * A duration used to calculate start relative to end. If end is in the future, start is calculated as this duration before now.
+   *
+   * Any value specified for start supersedes this parameter.
+   */
+  since?: string;
+  /**
+   * A set of log stream selector that selects the streams to match and return label values for <name>.
+   *
+   * Example: {"app": "myapp", "environment": "dev"}
+   */
+  query?: string;
+}
+```
 
 ## Contributors ✨
 

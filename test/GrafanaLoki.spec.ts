@@ -9,7 +9,7 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import { GrafanaLoki } from "../src/class/GrafanaLoki.class.js";
 import { LogParser } from "../src/class/LogParser.class.js";
-import { QueryRangeResponse } from "../src/types.js";
+import { LabelResponse, QueryRangeResponse } from "../src/types.js";
 
 // CONSTANTS
 const kDummyURL = "https://nodejs.org";
@@ -115,6 +115,59 @@ describe("GrafanaLoki", () => {
       );
     });
   });
+
+  describe("labels", () => {
+    const agentPoolInterceptor = kMockAgent.get(kDummyURL);
+
+    before(() => {
+      process.env.GRAFANA_API_TOKEN = "";
+      setGlobalDispatcher(kMockAgent);
+    });
+
+    after(() => {
+      delete process.env.GRAFANA_API_TOKEN;
+      setGlobalDispatcher(kDefaultDispatcher);
+    });
+
+    it("should return labels", async() => {
+      const expectedLabels = ["app", "env"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/labels")
+        })
+        .reply(200, mockLabelResponse(expectedLabels), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.labels();
+      assert.deepEqual(
+        result,
+        expectedLabels
+      );
+    });
+
+    it("should return label values", async() => {
+      const expectedLabelValues = ["prod", "preprod"];
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/label/env/values")
+        })
+        .reply(200, mockLabelResponse(expectedLabelValues), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.labelValues("env");
+      assert.deepEqual(
+        result,
+        expectedLabelValues
+      );
+    });
+  });
 });
 
 type DeepPartial<T> = T extends object ? {
@@ -134,6 +187,13 @@ function mockStreamResponse(logs: string[]): DeepPartial<QueryRangeResponse> {
       ],
       stats: {}
     }
+  };
+}
+
+function mockLabelResponse(response: string[]): LabelResponse {
+  return {
+    status: "success",
+    data: response
   };
 }
 
