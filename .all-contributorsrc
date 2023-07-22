@@ -15,6 +15,17 @@
         "security",
         "doc"
       ]
+    },
+    {
+      "login": "PierreDemailly",
+      "name": "PierreDemailly",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39910767?v=4",
+      "profile": "https://github.com/PierreDemailly",
+      "contributions": [
+        "code",
+        "test",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
