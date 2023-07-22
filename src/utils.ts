@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import ms from "ms";
 
 // Import Internal Dependencies
-import { QueryRangeResponse } from "./types.js";
+import { RawQueryRangeResponse } from "./types.js";
 
 export function durationToUnixTimestamp(duration: string | number): string {
   if (typeof duration === "number") {
@@ -31,19 +31,27 @@ export function transformStreamValue(
   };
 }
 
+export type TimeRange = [first: number, last: number];
+
 export function inlineLogs(
-  result: QueryRangeResponse
-): string[] {
+  result: RawQueryRangeResponse
+): null | { logs: string[], timerange: TimeRange } {
   if (result.status !== "success") {
-    return [];
+    return null;
   }
 
   // TODO: handle matrix?
-  const logs = result.data.result.flatMap(
-    (host) => host.values.map(transformStreamValue)
-  );
+  const flatLogs = result.data.result
+    .flatMap(
+      (host) => host.values.map(transformStreamValue)
+    )
+    .sort((left, right) => (left.date.isBefore(right.date) ? 1 : -1));
+  if (flatLogs.length === 0) {
+    return null;
+  }
 
-  return logs
-    .sort((left, right) => (left.date.isBefore(right.date) ? 1 : -1))
-    .map((row) => row.log);
+  return {
+    logs: flatLogs.map((row) => row.log),
+    timerange: [flatLogs.at(0)!.date.unix(), flatLogs.at(-1)!.date.unix()]
+  };
 }

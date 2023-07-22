@@ -9,7 +9,7 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import { GrafanaLoki } from "../src/class/GrafanaLoki.class.js";
 import { LogParser } from "../src/class/LogParser.class.js";
-import { LabelResponse, QueryRangeResponse } from "../src/types.js";
+import { LabelResponse, RawQueryRangeResponse } from "../src/types.js";
 
 // CONSTANTS
 const kDummyURL = "https://nodejs.org";
@@ -87,7 +87,7 @@ describe("GrafanaLoki", () => {
 
       const result = await sdk.queryRange("{app='foo'}");
       assert.deepEqual(
-        result,
+        result.logs,
         expectedLogs.slice(0).reverse()
       );
     });
@@ -108,9 +108,9 @@ describe("GrafanaLoki", () => {
       const result = await sdk.queryRange<{ name: string }>("{app='foo'}", {
         parser: new LogParser("hello '<name:alphanum>'")
       });
-      assert.strictEqual(result.length, 1);
+      assert.strictEqual(result.logs.length, 1);
       assert.deepEqual(
-        result[0],
+        result.logs[0],
         { name: "Thomas" }
       );
     });
@@ -174,7 +174,7 @@ type DeepPartial<T> = T extends object ? {
   [P in keyof T]?: DeepPartial<T[P]>;
 } : T;
 
-function mockStreamResponse(logs: string[]): DeepPartial<QueryRangeResponse> {
+function mockStreamResponse(logs: string[]): DeepPartial<RawQueryRangeResponse> {
   return {
     status: "success",
     data: {
