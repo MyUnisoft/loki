@@ -3,7 +3,7 @@ export interface LokiStream {
   values: [unixEpoch: string, log: string][];
 }
 
-export interface QueryRangeResponse {
+export interface RawQueryRangeResponse {
   status: "success";
   data: {
     resultType: "matrix" | "streams";

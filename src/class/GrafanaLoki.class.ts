@@ -3,7 +3,7 @@ import * as httpie from "@myunisoft/httpie";
 
 // Import Internal Dependencies
 import * as utils from "../utils.js";
-import { LabelResponse, LabelValuesResponse, QueryRangeResponse } from "../types.js";
+import { LabelResponse, LabelValuesResponse, RawQueryRangeResponse } from "../types.js";
 import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
 
 export interface LokiQueryOptions<T> {
@@ -62,6 +62,11 @@ export interface LokiLabelValuesOptions extends LokiLabelsOptions {
   query?: string;
 }
 
+export interface QueryRangeResponse<T> {
+  logs: T[];
+  timerange: utils.TimeRange | null;
+}
+
 export class GrafanaLoki {
   private apiToken: string;
   private remoteApiURL: URL;
@@ -88,7 +93,7 @@ export class GrafanaLoki {
   async queryRange<T = string>(
     logQL: string,
     options: LokiQueryOptions<T> = {}
-  ): Promise<T[]> {
+  ): Promise<QueryRangeResponse<T>> {
     const {
       limit = 100,
       parser = new NoopLogParser<T>()
@@ -110,13 +115,20 @@ export class GrafanaLoki {
       uri.searchParams.set("since", options.since);
     }
 
-    const { data } = await httpie.get<QueryRangeResponse>(
+    const { data } = await httpie.get<RawQueryRangeResponse>(
       uri, this.httpOptions
     );
+    const inlinedLogs = utils.inlineLogs(data);
+    if (inlinedLogs === null) {
+      return {
+        logs: [], timerange: null
+      };
+    }
 
-    return parser.executeOnLogs(
-      utils.inlineLogs(data)
-    );
+    return {
+      logs: parser.executeOnLogs(inlinedLogs.logs),
+      timerange: inlinedLogs.timerange
+    };
   }
 
   async labels(options: LokiLabelsOptions = {}): Promise<string[]> {
