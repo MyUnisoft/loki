@@ -70,6 +70,10 @@ export interface LokiQueryOptions<T> {
   end?: number | string;
   since?: string;
   parser?: LogParserLike<T>;
+  /**
+   * @default "inline"
+   */
+  mode?: "inline" | "stream";
 }
 ```
 
@@ -108,6 +112,18 @@ for (const data of logs) {
 ```
 
 The parser will automatically escape and generate a RegExp with capture group (with a syntax similar to Loki pattern).
+---
+
+You can use either `inline` mode which is the default mode or `stream` mode.
+- `inline` returns the inlined logs (`string[]`)
+- `stream` returns an object with stream (label key-value pairs) and logs (`LokiStreamResult[]`)
+
+```ts
+interface LokiStreamResult<T = string> {
+  stream: Record<string, string>;
+  values: T[];
+}
+```
 
 ### labels
 

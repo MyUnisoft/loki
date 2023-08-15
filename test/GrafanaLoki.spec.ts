@@ -9,7 +9,7 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import { GrafanaLoki } from "../src/class/GrafanaLoki.class.js";
 import { LogParser } from "../src/class/LogParser.class.js";
-import { LabelResponse, RawQueryRangeResponse } from "../src/types.js";
+import { LabelResponse, LokiStreamResult, RawQueryRangeResponse } from "../src/types.js";
 
 // CONSTANTS
 const kDummyURL = "https://nodejs.org";
@@ -92,6 +92,27 @@ describe("GrafanaLoki", () => {
       );
     });
 
+    it("should return expectedLogs with no modification (using NoopParser, stream mode)", async() => {
+      const expectedLogs = ["hello world", "foobar"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.queryRange<LokiStreamResult>("{app='foo'}", { mode: "stream" });
+      assert.deepEqual(
+        result.logs[0].values,
+        expectedLogs.slice(0)
+      );
+      assert.deepEqual(result.logs[0].stream, { foo: "bar" });
+    });
+
     it("should use the provided parser to transform logs", async() => {
       const expectedLogs = ["hello 'Thomas'"];
 
@@ -113,6 +134,32 @@ describe("GrafanaLoki", () => {
         result.logs[0],
         { name: "Thomas" }
       );
+    });
+
+    it("should use the provided parser to transform logs (stream mode)", async() => {
+      const expectedLogs = ["hello 'Thomas'"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.queryRange<LokiStreamResult<{ name: string }>>("{app='foo'}", {
+        parser: new LogParser<LokiStreamResult<{ name: string }>>("hello '<name:alphanum>'"),
+        mode: "stream"
+      });
+
+      assert.strictEqual(result.logs.length, 1);
+      assert.deepEqual(
+        result.logs[0].values[0],
+        { name: "Thomas" }
+      );
+      assert.deepEqual(result.logs[0].stream, { foo: "bar" });
     });
   });
 
@@ -181,7 +228,7 @@ function mockStreamResponse(logs: string[]): DeepPartial<RawQueryRangeResponse> 
       resultType: "streams",
       result: [
         {
-          stream: {},
+          stream: { foo: "bar" },
           values: logs.map((log) => [getNanoSecTime(), log])
         }
       ],

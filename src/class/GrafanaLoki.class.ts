@@ -3,7 +3,7 @@ import * as httpie from "@myunisoft/httpie";
 
 // Import Internal Dependencies
 import * as utils from "../utils.js";
-import { LabelResponse, LabelValuesResponse, RawQueryRangeResponse } from "../types.js";
+import { LabelResponse, LabelValuesResponse, LokiStreamResult, RawQueryRangeResponse } from "../types.js";
 import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
 
 export interface LokiQueryOptions<T> {
@@ -15,6 +15,10 @@ export interface LokiQueryOptions<T> {
   end?: number | string;
   since?: string;
   parser?: LogParserLike<T>;
+  /**
+   * @default "inline"
+   */
+  mode?: "inline" | "stream";
 }
 
 export interface GrafanaLokiConstructorOptions {
@@ -63,7 +67,7 @@ export interface LokiLabelValuesOptions extends LokiLabelsOptions {
 }
 
 export interface QueryRangeResponse<T> {
-  logs: T[];
+  logs: (T | LokiStreamResult<T>)[];
   timerange: utils.TimeRange | null;
 }
 
@@ -96,7 +100,8 @@ export class GrafanaLoki {
   ): Promise<QueryRangeResponse<T>> {
     const {
       limit = 100,
-      parser = new NoopLogParser<T>()
+      parser = new NoopLogParser<T>(),
+      mode = "inline"
     } = options;
 
     /**
@@ -125,8 +130,10 @@ export class GrafanaLoki {
       };
     }
 
+    const logs = mode === "inline" ? inlinedLogs.logs : data.data.result;
+
     return {
-      logs: parser.executeOnLogs(inlinedLogs.logs),
+      logs: parser.executeOnLogs(logs),
       timerange: inlinedLogs.timerange
     };
   }

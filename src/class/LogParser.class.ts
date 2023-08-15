@@ -1,6 +1,7 @@
 /* eslint-disable func-style */
 
 // Import Internal Dependencies
+import { LokiStream, LokiStreamResult } from "../types.js";
 import { escapeStringRegExp } from "../utils.js";
 
 // CONSTANTS
@@ -43,12 +44,18 @@ const kAvailableRegExField: Record<string, RegExField> = {
 };
 
 export interface LogParserLike<T> {
-  executeOnLogs(logs: string[]): T[];
+  executeOnLogs(logs: string[] | LokiStream[]): (T | LokiStreamResult<T>)[];
 }
 
 export class NoopLogParser<T = string> implements LogParserLike<T> {
-  executeOnLogs(logs: string[]): T[] {
-    return logs as T[];
+  executeOnLogs(logs: string[] | LokiStream[]): T[] {
+    if (typeof logs[0] === "string") {
+      return logs as T[];
+    }
+
+    return logs.map((log) => {
+      return { stream: log.stream, values: log.values.flatMap((value) => value[1]) };
+    }) as T[];
   }
 }
 
@@ -77,21 +84,32 @@ export class LogParser<T = any> implements LogParserLike<T> {
     return this;
   }
 
-  compile(): (log: string) => [] | [log: T] {
+  compile(): (log: string | LokiStream) => T[] | LokiStreamResult<T> {
     const exprStr = this.pattern.replaceAll(
       LogParser.RegExp(),
       this.replacer.bind(this)
     );
 
     return (log) => {
-      const match = new RegExp(exprStr).exec(log);
+      if (typeof log === "string") {
+        const match = new RegExp(exprStr).exec(log);
 
-      return match === null ? [] : [match.groups as T];
+        return match === null ? [] : [match.groups as T];
+      }
+
+      return {
+        stream: log.stream,
+        values: log.values.flatMap((value) => {
+          const match = new RegExp(exprStr).exec(value[1]);
+
+          return match === null ? [] : [match.groups as T];
+        })
+      };
     };
   }
 
-  executeOnLogs(logs: string[]): T[] {
-    return logs.flatMap(this.compile());
+  executeOnLogs(logs: string[] | LokiStream[]): (T | LokiStreamResult<T>)[] {
+    return logs.flatMap<T | LokiStreamResult<T>>(this.compile());
   }
 
   private replacer(_: string, matchingFieldOne: string) {
