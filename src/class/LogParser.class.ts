@@ -1,7 +1,6 @@
 /* eslint-disable func-style */
 
 // Import Internal Dependencies
-import { LokiStreamResult } from "../types.js";
 import { escapeStringRegExp } from "../utils.js";
 
 // CONSTANTS
@@ -44,12 +43,12 @@ const kAvailableRegExField: Record<string, RegExField> = {
 };
 
 export interface LogParserLike<T> {
-  executeOnLogs(logs: string[] | LokiStreamResult[]): (T | LokiStreamResult<T>)[];
+  executeOnLogs(logs: string[]): T[];
 }
 
 export class NoopLogParser<T = string> implements LogParserLike<T> {
-  executeOnLogs(logs: string[] | LokiStreamResult[]): (T | LokiStreamResult<T>)[] {
-    return logs as (T | LokiStreamResult<T>)[];
+  executeOnLogs(logs: string[]): T[] {
+    return logs as T[];
   }
 }
 
@@ -78,32 +77,21 @@ export class LogParser<T = any> implements LogParserLike<T> {
     return this;
   }
 
-  compile(): (log: string | LokiStreamResult) => T[] | LokiStreamResult<T> {
+  compile(): (log: string) => [] | [log: T] {
     const exprStr = this.pattern.replaceAll(
       LogParser.RegExp(),
       this.replacer.bind(this)
     );
 
     return (log) => {
-      if (typeof log === "string") {
-        const match = new RegExp(exprStr).exec(log);
+      const match = new RegExp(exprStr).exec(log);
 
-        return match === null ? [] : [match.groups as T];
-      }
-
-      return {
-        stream: log.stream,
-        values: log.values.flatMap((value) => {
-          const match = new RegExp(exprStr).exec(value);
-
-          return match === null ? [] : [match.groups as T];
-        })
-      };
+      return match === null ? [] : [match.groups as T];
     };
   }
 
-  executeOnLogs(logs: string[] | LokiStreamResult[]): (T | LokiStreamResult<T>)[] {
-    return logs.flatMap<T | LokiStreamResult<T>>(this.compile());
+  executeOnLogs(logs: string[]): T[] {
+    return logs.flatMap(this.compile());
   }
 
   private replacer(_: string, matchingFieldOne: string) {

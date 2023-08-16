@@ -6,19 +6,18 @@ import * as utils from "../utils.js";
 import { LabelResponse, LabelValuesResponse, LokiStreamResult, RawQueryRangeResponse } from "../types.js";
 import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
 
-export interface LokiQueryOptions<T> {
+export interface LokiQueryAPIOptions {
   /**
    * @default 100
-   * */
+   */
   limit?: number;
   start?: number | string;
   end?: number | string;
   since?: string;
+}
+
+export interface LokiQueryOptions<T> extends LokiQueryAPIOptions {
   parser?: LogParserLike<T>;
-  /**
-   * @default "inline"
-   */
-  mode?: "inline" | "stream";
 }
 
 export interface GrafanaLokiConstructorOptions {
@@ -67,7 +66,12 @@ export interface LokiLabelValuesOptions extends LokiLabelsOptions {
 }
 
 export interface QueryRangeResponse<T> {
-  logs: (T | LokiStreamResult<T>)[];
+  logs: T[];
+  timerange: utils.TimeRange | null;
+}
+
+export interface QueryRangeStreamResponse<T> {
+  logs: LokiStreamResult<T>[];
   timerange: utils.TimeRange | null;
 }
 
@@ -94,14 +98,12 @@ export class GrafanaLoki {
     };
   }
 
-  async queryRange<T = string>(
+  #fetchQueryRange(
     logQL: string,
-    options: LokiQueryOptions<T> = {}
-  ): Promise<QueryRangeResponse<T>> {
+    options: LokiQueryAPIOptions = {}
+  ): Promise<httpie.RequestResponse<RawQueryRangeResponse>> {
     const {
-      limit = 100,
-      parser = new NoopLogParser<T>(),
-      mode = "inline"
+      limit = 100
     } = options;
 
     /**
@@ -120,9 +122,38 @@ export class GrafanaLoki {
       uri.searchParams.set("since", options.since);
     }
 
-    const { data } = await httpie.get<RawQueryRangeResponse>(
+    return httpie.get<RawQueryRangeResponse>(
       uri, this.httpOptions
     );
+  }
+
+  async queryRangeStream<T = string>(
+    logQL: string,
+    options: LokiQueryOptions<T> = {}
+  ): Promise<QueryRangeStreamResponse<T>> {
+    const { parser = new NoopLogParser<T>() } = options;
+
+    const { data } = await this.#fetchQueryRange(logQL, options);
+
+    return {
+      logs: data.data.result.map((result) => {
+        return {
+          stream: result.stream,
+          values: result.values.flatMap(([, log]) => parser.executeOnLogs([log]))
+        };
+      }),
+      timerange: utils.queryRangeStreamTimeRange(data.data.result)
+    };
+  }
+
+  async queryRange<T = string>(
+    logQL: string,
+    options: LokiQueryOptions<T> = {}
+  ): Promise<QueryRangeResponse<T>> {
+    const { parser = new NoopLogParser<T>() } = options;
+
+    const { data } = await this.#fetchQueryRange(logQL, options);
+
     const inlinedLogs = utils.inlineLogs(data);
     if (inlinedLogs === null) {
       return {
@@ -130,15 +161,8 @@ export class GrafanaLoki {
       };
     }
 
-    const logs = mode === "inline" ? inlinedLogs.logs : data.data.result.map<LokiStreamResult>((res) => {
-      return {
-        stream: res.stream,
-        values: res.values.map((value) => value[1])
-      };
-    });
-
     return {
-      logs: parser.executeOnLogs(logs),
+      logs: parser.executeOnLogs(inlinedLogs.logs),
       timerange: inlinedLogs.timerange
     };
   }

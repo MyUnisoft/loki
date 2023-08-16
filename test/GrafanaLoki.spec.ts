@@ -9,7 +9,7 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import { GrafanaLoki } from "../src/class/GrafanaLoki.class.js";
 import { LogParser } from "../src/class/LogParser.class.js";
-import { LabelResponse, LokiStreamResult, RawQueryRangeResponse } from "../src/types.js";
+import { LabelResponse, RawQueryRangeResponse } from "../src/types.js";
 
 // CONSTANTS
 const kDummyURL = "https://nodejs.org";
@@ -92,7 +92,7 @@ describe("GrafanaLoki", () => {
       );
     });
 
-    it("should return expectedLogs with no modification (using NoopParser, stream mode)", async() => {
+    it("should return expectedLogs with no modification (using NoopParser, queryRangeStream)", async() => {
       const expectedLogs = ["hello world", "foobar"];
 
       agentPoolInterceptor
@@ -105,7 +105,8 @@ describe("GrafanaLoki", () => {
 
       const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.queryRange<LokiStreamResult>("{app='foo'}", { mode: "stream" });
+      const result = await sdk.queryRangeStream("{app='foo'}");
+
       assert.deepEqual(
         result.logs[0].values,
         expectedLogs.slice(0)
@@ -136,7 +137,7 @@ describe("GrafanaLoki", () => {
       );
     });
 
-    it("should use the provided parser to transform logs (stream mode)", async() => {
+    it("should use the provided parser to transform logs (queryRangeStream)", async() => {
       const expectedLogs = ["hello 'Thomas'"];
 
       agentPoolInterceptor
@@ -149,9 +150,8 @@ describe("GrafanaLoki", () => {
 
       const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.queryRange<LokiStreamResult<{ name: string }>>("{app='foo'}", {
-        parser: new LogParser<LokiStreamResult<{ name: string }>>("hello '<name:alphanum>'"),
-        mode: "stream"
+      const result = await sdk.queryRangeStream<{ name: string }>("{app='foo'}", {
+        parser: new LogParser("hello '<name:alphanum>'")
       });
 
       assert.strictEqual(result.logs.length, 1);
