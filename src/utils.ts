@@ -56,7 +56,11 @@ export function inlineLogs(
   };
 }
 
-export function queryRangeStreamTimeRange(result: LokiStream[]): [number, number] {
+export function queryRangeStreamTimeRange(result: LokiStream[]): [number, number] | null {
+  if (result.length === 0) {
+    return null;
+  }
+
   const flatLogs = result
     .flatMap(
       (host) => host.values.map(transformStreamValue)

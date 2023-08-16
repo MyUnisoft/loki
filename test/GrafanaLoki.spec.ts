@@ -114,6 +114,27 @@ describe("GrafanaLoki", () => {
       assert.deepEqual(result.logs[0].stream, { foo: "bar" });
     });
 
+    it("should return empty list of logs (using NoopParser, queryRangeStream)", async() => {
+      const expectedLogs = [];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.queryRangeStream("{app='foo'}");
+
+      assert.deepEqual(
+        result.logs,
+        expectedLogs
+      );
+    });
+
     it("should use the provided parser to transform logs", async() => {
       const expectedLogs = ["hello 'Thomas'"];
 
@@ -160,6 +181,29 @@ describe("GrafanaLoki", () => {
         { name: "Thomas" }
       );
       assert.deepEqual(result.logs[0].stream, { foo: "bar" });
+    });
+
+    it("should return empty list of logs (using LogParser, queryRangeStream)", async() => {
+      const expectedLogs = [];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.queryRangeStream<{ name: string }>("{app='foo'}", {
+        parser: new LogParser("hello '<name:alphanum>'")
+      });
+
+      assert.deepEqual(
+        result.logs,
+        expectedLogs
+      );
     });
   });
 
@@ -226,12 +270,12 @@ function mockStreamResponse(logs: string[]): DeepPartial<RawQueryRangeResponse> 
     status: "success",
     data: {
       resultType: "streams",
-      result: [
+      result: logs.length > 0 ? [
         {
           stream: { foo: "bar" },
           values: logs.map((log) => [getNanoSecTime(), log])
         }
-      ],
+      ] : [],
       stats: {}
     }
   };
