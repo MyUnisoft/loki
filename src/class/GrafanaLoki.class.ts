@@ -130,7 +130,12 @@ export class GrafanaLoki {
       };
     }
 
-    const logs = mode === "inline" ? inlinedLogs.logs : data.data.result;
+    const logs = mode === "inline" ? inlinedLogs.logs : data.data.result.map<LokiStreamResult>((res) => {
+      return {
+        stream: res.stream,
+        values: res.values.map((value) => value[1])
+      };
+    });
 
     return {
       logs: parser.executeOnLogs(logs),

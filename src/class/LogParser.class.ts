@@ -1,7 +1,7 @@
 /* eslint-disable func-style */
 
 // Import Internal Dependencies
-import { LokiStream, LokiStreamResult } from "../types.js";
+import { LokiStreamResult } from "../types.js";
 import { escapeStringRegExp } from "../utils.js";
 
 // CONSTANTS
@@ -44,18 +44,12 @@ const kAvailableRegExField: Record<string, RegExField> = {
 };
 
 export interface LogParserLike<T> {
-  executeOnLogs(logs: string[] | LokiStream[]): (T | LokiStreamResult<T>)[];
+  executeOnLogs(logs: string[] | LokiStreamResult[]): (T | LokiStreamResult<T>)[];
 }
 
 export class NoopLogParser<T = string> implements LogParserLike<T> {
-  executeOnLogs(logs: string[] | LokiStream[]): T[] {
-    if (typeof logs[0] === "string") {
-      return logs as T[];
-    }
-
-    return logs.map((log) => {
-      return { stream: log.stream, values: log.values.flatMap((value) => value[1]) };
-    }) as T[];
+  executeOnLogs(logs: string[] | LokiStreamResult[]): (T | LokiStreamResult<T>)[] {
+    return logs as (T | LokiStreamResult<T>)[];
   }
 }
 
@@ -84,7 +78,7 @@ export class LogParser<T = any> implements LogParserLike<T> {
     return this;
   }
 
-  compile(): (log: string | LokiStream) => T[] | LokiStreamResult<T> {
+  compile(): (log: string | LokiStreamResult) => T[] | LokiStreamResult<T> {
     const exprStr = this.pattern.replaceAll(
       LogParser.RegExp(),
       this.replacer.bind(this)
@@ -100,7 +94,7 @@ export class LogParser<T = any> implements LogParserLike<T> {
       return {
         stream: log.stream,
         values: log.values.flatMap((value) => {
-          const match = new RegExp(exprStr).exec(value[1]);
+          const match = new RegExp(exprStr).exec(value);
 
           return match === null ? [] : [match.groups as T];
         })
@@ -108,7 +102,7 @@ export class LogParser<T = any> implements LogParserLike<T> {
     };
   }
 
-  executeOnLogs(logs: string[] | LokiStream[]): (T | LokiStreamResult<T>)[] {
+  executeOnLogs(logs: string[] | LokiStreamResult[]): (T | LokiStreamResult<T>)[] {
     return logs.flatMap<T | LokiStreamResult<T>>(this.compile());
   }
 
