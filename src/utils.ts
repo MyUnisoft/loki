@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import ms from "ms";
 
 // Import Internal Dependencies
-import { RawQueryRangeResponse } from "./types.js";
+import { LokiStream, RawQueryRangeResponse } from "./types.js";
 
 export function durationToUnixTimestamp(duration: string | number): string {
   if (typeof duration === "number") {
@@ -54,4 +54,14 @@ export function inlineLogs(
     logs: flatLogs.map((row) => row.log),
     timerange: [flatLogs.at(0)!.date.unix(), flatLogs.at(-1)!.date.unix()]
   };
+}
+
+export function queryRangeStreamTimeRange(result: LokiStream[]): [number, number] {
+  const flatLogs = result
+    .flatMap(
+      (host) => host.values.map(transformStreamValue)
+    )
+    .sort((left, right) => (left.date.isBefore(right.date) ? 1 : -1));
+
+  return [flatLogs.at(0)!.date.unix(), flatLogs.at(-1)!.date.unix()];
 }

@@ -64,7 +64,7 @@ queryRange options is described by the following TypeScript interface
 export interface LokiQueryOptions<T> {
   /**
    * @default 100
-   * */
+   */
   limit?: number;
   start?: number | string;
   end?: number | string;
@@ -107,7 +107,30 @@ for (const data of logs) {
 }
 ```
 
-The parser will automatically escape and generate a RegExp with capture group (with a syntax similar to Loki pattern).
+### queryRangeStream
+
+Same as `queryRange` but returns the labels key-value pairs stream
+
+```ts
+const customParser = new LogParser<CustomParser>(
+  "<date>: [req-<requestId:word>] <endpoint> <method:httpMethod> <statusCode:httpStatusCode>"
+);
+
+const logs = await api.queryRangeStream(
+  `{app="serviceName", env="production"}`,
+);
+for (const { stream, values } of logs) {
+  // Record<string, string>
+  console.log(stream);
+  // string[]
+  console.log(values);
+}
+
+interface LokiStreamResult<T = string> {
+  stream: Record<string, string>;
+  values: T[];
+}
+```
 
 ### labels
 

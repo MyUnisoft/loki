@@ -3,6 +3,11 @@ export interface LokiStream {
   values: [unixEpoch: string, log: string][];
 }
 
+export interface LokiStreamResult<T = string> {
+  stream: Record<string, string>;
+  values: T[];
+}
+
 export interface RawQueryRangeResponse {
   status: "success";
   data: {

@@ -92,6 +92,28 @@ describe("GrafanaLoki", () => {
       );
     });
 
+    it("should return expectedLogs with no modification (using NoopParser, queryRangeStream)", async() => {
+      const expectedLogs = ["hello world", "foobar"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.queryRangeStream("{app='foo'}");
+
+      assert.deepEqual(
+        result.logs[0].values,
+        expectedLogs.slice(0)
+      );
+      assert.deepEqual(result.logs[0].stream, { foo: "bar" });
+    });
+
     it("should use the provided parser to transform logs", async() => {
       const expectedLogs = ["hello 'Thomas'"];
 
@@ -113,6 +135,31 @@ describe("GrafanaLoki", () => {
         result.logs[0],
         { name: "Thomas" }
       );
+    });
+
+    it("should use the provided parser to transform logs (queryRangeStream)", async() => {
+      const expectedLogs = ["hello 'Thomas'"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.queryRangeStream<{ name: string }>("{app='foo'}", {
+        parser: new LogParser("hello '<name:alphanum>'")
+      });
+
+      assert.strictEqual(result.logs.length, 1);
+      assert.deepEqual(
+        result.logs[0].values[0],
+        { name: "Thomas" }
+      );
+      assert.deepEqual(result.logs[0].stream, { foo: "bar" });
     });
   });
 
@@ -181,7 +228,7 @@ function mockStreamResponse(logs: string[]): DeepPartial<RawQueryRangeResponse> 
       resultType: "streams",
       result: [
         {
-          stream: {},
+          stream: { foo: "bar" },
           values: logs.map((log) => [getNanoSecTime(), log])
         }
       ],
