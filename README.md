@@ -132,6 +132,86 @@ interface LokiStreamResult<T = string> {
 }
 ```
 
+### datasources
+
+```ts
+interface LokiDatasource {
+  id: number;
+  uid: string;
+  orgId: number;
+  name: string;
+  type: string;
+  typeName?: string;
+  typeLogoUrl: string;
+  access: string;
+  url: string;
+  password?: string;
+  user: string;
+  database: string;
+  basicAuth: boolean;
+  basicAuthUser?: string;
+  basicAuthPassword?: string;
+  withCredentials?: boolean;
+  isDefault: boolean;
+  jsonData?: {
+    authType?: string;
+    defaultRegion?: string;
+    logLevelField?: string;
+    logMessageField?: string;
+    timeField?: string;
+    maxConcurrentShardRequests?: number;
+    maxLines?: number;
+    graphiteVersion?: string;
+    graphiteType?: string;
+  };
+  secureJsonFields?: {
+    basicAuthPassword?: boolean;
+  };
+  version?: number;
+  readOnly: boolean;
+}
+```
+
+```ts
+const datasources = await api.datasources();
+```
+
+`datasources()` retrieves all datasources.
+
+### datasourceById
+
+```ts
+const datasource = await api.datasourceById(1);
+// or
+const datasource = await api.datasourceById("1");
+```
+
+`datasourceById(id: number | string)` retrieves a single datasource given it's id.
+
+### datasourceByName
+
+```ts
+const datasource = await api.datasourceByName("Loki");
+```
+
+`datasourceByName(name: string)` retrieves a single datasource given it's name.
+
+### datasourceByUid
+
+```ts
+const datasource = await api.datasourceByUid("303030xGz");
+```
+
+`datasourceByUid(name: string)` retrieves a single datasources given it's uid.
+
+### datasourceIdByName
+
+```ts
+const id = await api.datasourceIdByName("Loki");
+```
+
+`datasourceIdByName(name: string)` retrieves datasource id given it's name.
+
 ### labels
 
 ```ts

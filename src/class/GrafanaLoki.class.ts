@@ -56,6 +56,42 @@ export interface LokiLabelsOptions {
   since?: string;
 }
 
+export interface LokiDatasource {
+  id: number;
+  uid: string;
+  orgId: number;
+  name: string;
+  type: string;
+  typeName?: string;
+  typeLogoUrl: string;
+  access: string;
+  url: string;
+  password?: string;
+  user: string;
+  database: string;
+  basicAuth: boolean;
+  basicAuthUser?: string;
+  basicAuthPassword?: string;
+  withCredentials?: boolean;
+  isDefault: boolean;
+  jsonData?: {
+    authType?: string;
+    defaultRegion?: string;
+    logLevelField?: string;
+    logMessageField?: string;
+    timeField?: string;
+    maxConcurrentShardRequests?: number;
+    maxLines?: number;
+    graphiteVersion?: string;
+    graphiteType?: string;
+  };
+  secureJsonFields?: {
+    basicAuthPassword?: boolean;
+  };
+  version?: number;
+  readOnly: boolean;
+}
+
 export interface LokiLabelValuesOptions extends LokiLabelsOptions {
   /**
    * A set of log stream selector that selects the streams to match and return label values for <name>.
@@ -165,6 +201,42 @@ export class GrafanaLoki {
       logs: parser.executeOnLogs(inlinedLogs.logs),
       timerange: inlinedLogs.timerange
     };
+  }
+
+  async datasources(): Promise<LokiDatasource[]> {
+    const uri = new URL("/api/datasources", this.remoteApiURL);
+
+    const { data } = await httpie.get<LokiDatasource[]>(uri, this.httpOptions);
+
+    return data;
+  }
+
+  async datasourceById(id: string | number): Promise<LokiDatasource> {
+    const uri = new URL(`/api/datasources/${id}`, this.remoteApiURL);
+    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
+
+    return data;
+  }
+
+  async datasourceByName(name: string): Promise<LokiDatasource> {
+    const uri = new URL(`/api/datasources/name/${name}`, this.remoteApiURL);
+    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
+
+    return data;
+  }
+
+  async datasourceByUid(uid: string): Promise<LokiDatasource> {
+    const uri = new URL(`/api/datasources/uid/${uid}`, this.remoteApiURL);
+    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
+
+    return data;
+  }
+
+  async datasourceIdByName(name: string): Promise<LokiDatasource> {
+    const uri = new URL(`/api/datasources/id/${name}`, this.remoteApiURL);
+    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
+
+    return data;
   }
 
   async labels(options: LokiLabelsOptions = {}): Promise<string[]> {
