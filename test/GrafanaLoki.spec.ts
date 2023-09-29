@@ -104,7 +104,7 @@ describe("GrafanaLoki", () => {
 
       const result = await sdk.queryRange("{app='foo'}");
       assert.deepEqual(
-        result.logs,
+        result.values,
         expectedLogs.slice(0).reverse()
       );
     });
@@ -168,9 +168,9 @@ describe("GrafanaLoki", () => {
       const result = await sdk.queryRange<{ name: string }>("{app='foo'}", {
         parser: new LogParser("hello '<name:alphanum>'")
       });
-      assert.strictEqual(result.logs.length, 1);
+      assert.strictEqual(result.values.length, 1);
       assert.deepEqual(
-        result.logs[0],
+        result.values[0],
         { name: "Thomas" }
       );
     });
