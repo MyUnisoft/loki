@@ -3,7 +3,14 @@ import * as httpie from "@myunisoft/httpie";
 
 // Import Internal Dependencies
 import * as utils from "../utils.js";
-import { LabelResponse, LabelValuesResponse, LokiStreamResult, RawQueryRangeResponse } from "../types.js";
+import {
+  LabelResponse,
+  LabelValuesResponse,
+  LokiStreamResult,
+  RawQueryRangeResponse,
+  LokiStream,
+  LokiMatrix
+} from "../types.js";
 import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
 
 export interface LokiQueryAPIOptions {
@@ -102,7 +109,7 @@ export interface LokiLabelValuesOptions extends LokiLabelsOptions {
 }
 
 export interface QueryRangeResponse<T> {
-  logs: T[];
+  values: T[];
   timerange: utils.TimeRange | null;
 }
 
@@ -134,10 +141,10 @@ export class GrafanaLoki {
     };
   }
 
-  #fetchQueryRange(
+  #fetchQueryRange<T>(
     logQL: string,
     options: LokiQueryAPIOptions = {}
-  ): Promise<httpie.RequestResponse<RawQueryRangeResponse>> {
+  ): Promise<httpie.RequestResponse<RawQueryRangeResponse<T>>> {
     const {
       limit = 100
     } = options;
@@ -158,7 +165,7 @@ export class GrafanaLoki {
       uri.searchParams.set("since", options.since);
     }
 
-    return httpie.get<RawQueryRangeResponse>(
+    return httpie.get<RawQueryRangeResponse<T>>(
       uri, this.httpOptions
     );
   }
@@ -169,7 +176,7 @@ export class GrafanaLoki {
   ): Promise<QueryRangeStreamResponse<T>> {
     const { parser = new NoopLogParser<T>() } = options;
 
-    const { data } = await this.#fetchQueryRange(logQL, options);
+    const { data } = await this.#fetchQueryRange<LokiStream>(logQL, options);
 
     return {
       logs: data.data.result.map((result) => {
@@ -188,17 +195,17 @@ export class GrafanaLoki {
   ): Promise<QueryRangeResponse<T>> {
     const { parser = new NoopLogParser<T>() } = options;
 
-    const { data } = await this.#fetchQueryRange(logQL, options);
+    const { data } = await this.#fetchQueryRange<LokiMatrix | LokiStream>(logQL, options);
 
     const inlinedLogs = utils.inlineLogs(data);
     if (inlinedLogs === null) {
       return {
-        logs: [], timerange: null
+        values: [], timerange: null
       };
     }
 
     return {
-      logs: parser.executeOnLogs(inlinedLogs.logs),
+      values: parser.executeOnLogs(inlinedLogs.values),
       timerange: inlinedLogs.timerange
     };
   }

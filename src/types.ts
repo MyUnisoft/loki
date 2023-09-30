@@ -3,16 +3,21 @@ export interface LokiStream {
   values: [unixEpoch: string, log: string][];
 }
 
+export interface LokiMatrix {
+  metric: Record<string, string>;
+  values: [unixEpoch: string, value: string][];
+}
+
 export interface LokiStreamResult<T = string> {
   stream: Record<string, string>;
   values: T[];
 }
 
-export interface RawQueryRangeResponse {
+export interface RawQueryRangeResponse<T = LokiStream> {
   status: "success";
   data: {
     resultType: "matrix" | "streams";
-    result: LokiStream[];
+    result: T[];
     stats: {
       summary: {
         bytesProcessedPerSecond: number;
