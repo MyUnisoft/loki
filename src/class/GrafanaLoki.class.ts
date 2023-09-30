@@ -1,5 +1,7 @@
+/* eslint-disable func-style */
 // Import Third-party Dependencies
 import * as httpie from "@myunisoft/httpie";
+import autoURL from "@openally/auto-url";
 
 // Import Internal Dependencies
 import * as utils from "../utils.js";
@@ -12,6 +14,13 @@ import {
   LokiMatrix
 } from "../types.js";
 import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
+
+// CONSTANTS
+const kDurationTransformer = (value: string | number) => utils.durationToUnixTimestamp(value);
+const kAutoURLGrafanaTransformer = {
+  start: kDurationTransformer,
+  end: kDurationTransformer
+};
 
 export interface LokiQueryAPIOptions {
   /**
@@ -145,25 +154,16 @@ export class GrafanaLoki {
     logQL: string,
     options: LokiQueryAPIOptions = {}
   ): Promise<httpie.RequestResponse<RawQueryRangeResponse<T>>> {
-    const {
-      limit = 100
-    } = options;
+    const { limit = 100 } = options;
 
     /**
      * @see https://grafana.com/docs/loki/latest/api/#query-loki-over-a-range-of-time
      */
-    const uri = new URL("loki/api/v1/query_range", this.remoteApiURL);
-    uri.searchParams.set("query", logQL);
-    uri.searchParams.set("limit", limit.toString());
-    if (options.start) {
-      uri.searchParams.set("start", utils.durationToUnixTimestamp(options.start));
-    }
-    if (options.end) {
-      uri.searchParams.set("end", utils.durationToUnixTimestamp(options.end));
-    }
-    if (options.since) {
-      uri.searchParams.set("since", options.since);
-    }
+    const uri = autoURL(
+      new URL("loki/api/v1/query_range", this.remoteApiURL),
+      { ...options, limit, query: logQL },
+      kAutoURLGrafanaTransformer
+    );
 
     return httpie.get<RawQueryRangeResponse<T>>(
       uri, this.httpOptions
@@ -220,6 +220,7 @@ export class GrafanaLoki {
 
   async datasourceById(id: string | number): Promise<LokiDatasource> {
     const uri = new URL(`/api/datasources/${id}`, this.remoteApiURL);
+
     const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
 
     return data;
@@ -227,6 +228,7 @@ export class GrafanaLoki {
 
   async datasourceByName(name: string): Promise<LokiDatasource> {
     const uri = new URL(`/api/datasources/name/${name}`, this.remoteApiURL);
+
     const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
 
     return data;
@@ -234,6 +236,7 @@ export class GrafanaLoki {
 
   async datasourceByUid(uid: string): Promise<LokiDatasource> {
     const uri = new URL(`/api/datasources/uid/${uid}`, this.remoteApiURL);
+
     const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
 
     return data;
@@ -241,22 +244,18 @@ export class GrafanaLoki {
 
   async datasourceIdByName(name: string): Promise<LokiDatasource> {
     const uri = new URL(`/api/datasources/id/${name}`, this.remoteApiURL);
+
     const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
 
     return data;
   }
 
   async labels(options: LokiLabelsOptions = {}): Promise<string[]> {
-    const uri = new URL("loki/api/v1/labels", this.remoteApiURL);
-    if (options.start) {
-      uri.searchParams.set("start", utils.durationToUnixTimestamp(options.start));
-    }
-    if (options.end) {
-      uri.searchParams.set("end", utils.durationToUnixTimestamp(options.end));
-    }
-    if (options.since) {
-      uri.searchParams.set("since", options.since);
-    }
+    const uri = autoURL(
+      new URL("loki/api/v1/labels", this.remoteApiURL),
+      options,
+      kAutoURLGrafanaTransformer
+    );
 
     const { data: labels } = await httpie.get<LabelResponse>(
       uri, this.httpOptions
@@ -266,19 +265,11 @@ export class GrafanaLoki {
   }
 
   async labelValues(label: string, options: LokiLabelValuesOptions = {}): Promise<string[]> {
-    const uri = new URL(`loki/api/v1/label/${label}/values`, this.remoteApiURL);
-    if (options.start) {
-      uri.searchParams.set("start", utils.durationToUnixTimestamp(options.start));
-    }
-    if (options.end) {
-      uri.searchParams.set("end", utils.durationToUnixTimestamp(options.end));
-    }
-    if (options.since) {
-      uri.searchParams.set("since", options.since);
-    }
-    if (options.query) {
-      uri.searchParams.set("query", options.query);
-    }
+    const uri = autoURL(
+      new URL(`loki/api/v1/label/${label}/values`, this.remoteApiURL),
+      options,
+      kAutoURLGrafanaTransformer
+    );
 
     const { data: labelValues } = await httpie.get<LabelValuesResponse>(
       uri, this.httpOptions
