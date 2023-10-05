@@ -53,12 +53,10 @@ export interface RawQueryRangeResponse<T = LokiStream> {
   }
 }
 
-export interface LabelResponse {
+export type LokiStandardBaseResponse<S> = {
+  status: "failed";
+} | {
   status: "success";
-  data: string[];
+  data: S;
 }
 
-export interface LabelValuesResponse {
-  status: "success";
-  data: string[];
-}

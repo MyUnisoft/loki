@@ -2,12 +2,12 @@
 // Import Third-party Dependencies
 import * as httpie from "@myunisoft/httpie";
 import autoURL from "@openally/auto-url";
+import { LogQL, StreamSelector } from "@sigyn/logql";
 
 // Import Internal Dependencies
 import * as utils from "../utils.js";
 import {
-  LabelResponse,
-  LabelValuesResponse,
+  LokiStandardBaseResponse,
   LokiStreamResult,
   RawQueryRangeResponse,
   LokiStream,
@@ -151,7 +151,7 @@ export class GrafanaLoki {
   }
 
   #fetchQueryRange<T>(
-    logQL: string,
+    logQL: LogQL | string,
     options: LokiQueryAPIOptions = {}
   ): Promise<httpie.RequestResponse<RawQueryRangeResponse<T>>> {
     const { limit = 100 } = options;
@@ -159,9 +159,10 @@ export class GrafanaLoki {
     /**
      * @see https://grafana.com/docs/loki/latest/api/#query-loki-over-a-range-of-time
      */
+    const query = typeof logQL === "string" ? logQL : logQL.toString();
     const uri = autoURL(
       new URL("loki/api/v1/query_range", this.remoteApiURL),
-      { ...options, limit, query: logQL },
+      { ...options, limit, query },
       kAutoURLGrafanaTransformer
     );
 
@@ -171,7 +172,7 @@ export class GrafanaLoki {
   }
 
   async queryRangeStream<T = string>(
-    logQL: string,
+    logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeStreamResponse<T>> {
     const { parser = new NoopLogParser<T>() } = options;
@@ -190,7 +191,7 @@ export class GrafanaLoki {
   }
 
   async queryRange<T = string>(
-    logQL: string,
+    logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeResponse<T>> {
     const { parser = new NoopLogParser<T>() } = options;
@@ -257,24 +258,42 @@ export class GrafanaLoki {
       kAutoURLGrafanaTransformer
     );
 
-    const { data: labels } = await httpie.get<LabelResponse>(
+    const { data: labels } = await httpie.get<LokiStandardBaseResponse<string[]>>(
       uri, this.httpOptions
     );
 
-    return labels.data;
+    return labels.status === "success" ? labels.data : [];
   }
 
-  async labelValues(label: string, options: LokiLabelValuesOptions = {}): Promise<string[]> {
+  async labelValues(
+    label: string,
+    options: LokiLabelValuesOptions = {}
+  ): Promise<string[]> {
     const uri = autoURL(
       new URL(`loki/api/v1/label/${label}/values`, this.remoteApiURL),
       options,
       kAutoURLGrafanaTransformer
     );
 
-    const { data: labelValues } = await httpie.get<LabelValuesResponse>(
+    const { data: labelValues } = await httpie.get<LokiStandardBaseResponse<string[]>>(
       uri, this.httpOptions
     );
 
-    return labelValues.data;
+    return labelValues.status === "success" ? labelValues.data : [];
+  }
+
+  async series<T = Record<string, string>>(
+    ...match: [StreamSelector | string, ...(StreamSelector | string)[]]
+  ): Promise<T[]> {
+    const uri = new URL(`loki/api/v1/series`, this.remoteApiURL);
+
+    // Note: Grafana API seem to want the match[] syntax
+    const { data: listSeries } = await httpie.get<LokiStandardBaseResponse<T[]>>(uri, {
+      querystring: new URLSearchParams(
+        match.map((selector) => ["match", new StreamSelector(selector).toString()])
+      )
+    });
+
+    return listSeries.status === "success" ? listSeries.data : [];
   }
 }
