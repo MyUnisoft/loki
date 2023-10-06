@@ -9,7 +9,7 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import { GrafanaLoki, LokiDatasource } from "../src/class/GrafanaLoki.class.js";
 import { LogParser } from "../src/class/LogParser.class.js";
-import { LabelResponse, RawQueryRangeResponse } from "../src/types.js";
+import { LokiStandardBaseResponse, RawQueryRangeResponse } from "../src/types.js";
 
 // CONSTANTS
 const kDummyURL = "https://nodejs.org";
@@ -391,7 +391,7 @@ describe("GrafanaLoki", () => {
         .intercept({
           path: (path) => path.includes("loki/api/v1/labels")
         })
-        .reply(200, mockLabelResponse(expectedLabels), {
+        .reply(200, mockLabelResponse("success", expectedLabels), {
           headers: { "Content-Type": "application/json" }
         });
 
@@ -410,7 +410,7 @@ describe("GrafanaLoki", () => {
         .intercept({
           path: (path) => path.includes("loki/api/v1/label/env/values")
         })
-        .reply(200, mockLabelResponse(expectedLabelValues), {
+        .reply(200, mockLabelResponse("success", expectedLabelValues), {
           headers: { "Content-Type": "application/json" }
         });
 
@@ -421,6 +421,71 @@ describe("GrafanaLoki", () => {
         result,
         expectedLabelValues
       );
+    });
+  });
+
+  describe("series", () => {
+    const agentPoolInterceptor = kMockAgent.get(kDummyURL);
+
+    before(() => {
+      process.env.GRAFANA_API_TOKEN = "";
+      setGlobalDispatcher(kMockAgent);
+    });
+
+    after(() => {
+      delete process.env.GRAFANA_API_TOKEN;
+      setGlobalDispatcher(kDefaultDispatcher);
+    });
+
+    it("should return series if response status is success", async() => {
+      const expectedSeries = [
+        {
+          app: "creditbail",
+          foo: "bar"
+        }
+      ];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/series")
+        })
+        .reply(200, mockLabelResponse("success", expectedSeries), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.series(`{env="production"}`);
+      assert.ok(Array.isArray(result));
+      assert.strictEqual(result.length, 1);
+
+      assert.deepEqual(
+        result,
+        expectedSeries
+      );
+    });
+
+    it("should return empty array if response status is failed", async() => {
+      const expectedSeries = [
+        {
+          app: "creditbail",
+          foo: "bar"
+        }
+      ];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/series")
+        })
+        .reply(200, mockLabelResponse("failed", expectedSeries), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaLoki({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.series(`{env="production"}`);
+      assert.ok(Array.isArray(result));
+      assert.strictEqual(result.length, 0);
     });
   });
 });
@@ -445,9 +510,12 @@ function mockStreamResponse(logs: string[]): DeepPartial<RawQueryRangeResponse> 
   };
 }
 
-function mockLabelResponse(response: string[]): LabelResponse {
+function mockLabelResponse<T>(
+  status: "success" | "failed",
+  response: T[]
+): LokiStandardBaseResponse<T[]> {
   return {
-    status: "success",
+    status,
     data: response
   };
 }

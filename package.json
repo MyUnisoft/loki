@@ -49,6 +49,7 @@
   "dependencies": {
     "@myunisoft/httpie": "^2.0.1",
     "@openally/auto-url": "^1.0.1",
+    "@sigyn/logql": "^1.1.0",
     "dayjs": "^1.11.9",
     "ms": "^2.1.3"
   }

@@ -3,7 +3,7 @@
 </h1></p>
 
 <p align="center">
-  Node.js Grafana Loki SDK (WIP)
+  Node.js Grafana Loki SDK
 </p>
 
 <p align="center">
@@ -42,6 +42,7 @@ $ yarn add @myunisoft/loki
 
 ```ts
 import { GrafanaLoki } from "@myunisoft/loki";
+import { LogQL } from "@sigyn/logql";
 
 const api = new GrafanaLoki({
   // Note: if not provided, it will load process.env.GRAFANA_API_TOKEN
@@ -49,8 +50,12 @@ const api = new GrafanaLoki({
   remoteApiURL: "https://name.loki.com"
 });
 
+const ql = new LogQL();
+ql.streamSelector.set("app", "serviceName");
+ql.streamSelector.set("env", "production");
+
 const logs = await api.queryRange(
-  `{app="serviceName", env="production"}`,
+  ql, // or string `{app="serviceName", env="production"}`
   {
     start: "1d",
     limit: 200
@@ -287,6 +292,14 @@ interface LokiLabelValueOptions {
   query?: string;
 }
 ```
+
+### series
+
+```ts
+const series = await api.series(`{env="production"}`);
+```
+
+Returns the list of time series that match a certain label set.
 
 ## Contributors ✨
 
