@@ -43,7 +43,7 @@ export interface LokiQueryOptions<T> {
   start?: number | string;
   end?: number | string;
   since?: string;
-  parser?: LogParserLike<T>;
+  pattern?: T | Array<T> | ReadonlyArray<T>;
 }
 ```
 
@@ -51,8 +51,8 @@ export interface LokiQueryOptions<T> {
 
 The response is described by the following interface:
 ```ts
-export interface QueryRangeResponse<T> {
-  values: T[];
+export interface QueryRangeResponse<T extends LokiPatternType> {
+  values: LokiLiteralPattern<T>[];
   timerange: TimeRange | null;
 }
 ```
@@ -75,8 +75,8 @@ for (const { stream, values } of logs) {
 
 The response is described by the following interface:
 ```ts
-interface QueryRangeStreamResponse<T> {
-  logs: LokiStreamResult<T>[];
+export interface QueryRangeStreamResponse<T extends LokiPatternType> {
+  logs: LokiStreamResult<LokiLiteralPattern<T>>[];
   timerange: TimeRange | null;
 }
 
@@ -177,4 +177,27 @@ Full definition of the class method (it can take one or many StreamSelector)
 async series<T = Record<string, string>>(
   ...match: [StreamSelector | string, ...(StreamSelector | string)[]]
 ): Promise<T[]>
+```
+
+## Pattern usage
+**queryRange** and **queryRangeStream** API allow the usage of pattern.
+
+```ts
+import { GrafanaApi } from "@myunisoft/loki";
+
+const api = new GrafanaApi({
+  remoteApiURL: "https://name.loki.com"
+});
+
+await api.Loki.queryRange("...", {
+  pattern: "<pattern> <here>"
+});
+
+// or use an Array (tuple)
+await api.Loki.queryRange("...", {
+  pattern: [
+    "<pattern> ",
+    "<here>
+  ] as const
+});
 ```

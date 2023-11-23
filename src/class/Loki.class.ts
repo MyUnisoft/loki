@@ -1,7 +1,16 @@
 // Import Third-party Dependencies
 import * as httpie from "@myunisoft/httpie";
 import autoURL from "@openally/auto-url";
-import { LogQL, StreamSelector } from "@sigyn/logql";
+import {
+  LogQL,
+  StreamSelector
+} from "@sigyn/logql";
+import {
+  Pattern,
+  NoopPattern,
+  LokiPatternType,
+  PatternShape
+} from "@sigyn/pattern";
 
 // Import Internal Dependencies
 import * as utils from "../utils.js";
@@ -14,7 +23,6 @@ import {
   QueryRangeStreamResponse
 } from "../types.js";
 import { ApiCredential } from "./ApiCredential.class.js";
-import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
 
 // CONSTANTS
 const kDurationTransformer = (value: string | number) => utils.durationToUnixTimestamp(value);
@@ -33,8 +41,8 @@ interface LokiQueryBaseOptions {
   since?: string;
 }
 
-export interface LokiQueryOptions<T> extends LokiQueryBaseOptions {
-  parser?: LogParserLike<T>;
+export interface LokiQueryOptions<T extends LokiPatternType> extends LokiQueryBaseOptions {
+  pattern?: T;
 }
 
 export interface LokiLabelsOptions {
@@ -104,11 +112,13 @@ export class Loki {
     );
   }
 
-  async queryRangeStream<T = string>(
+  async queryRangeStream<T extends LokiPatternType = string>(
     logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeStreamResponse<T>> {
-    const { parser = new NoopLogParser<T>() } = options;
+    const { pattern = new NoopPattern() } = options;
+    const parser: PatternShape<any> = pattern instanceof NoopPattern ?
+      pattern : new Pattern(pattern);
 
     const { data } = await this.#fetchQueryRange<LokiStream>(logQL, options);
 
@@ -116,18 +126,20 @@ export class Loki {
       logs: data.data.result.map((result) => {
         return {
           stream: result.stream,
-          values: result.values.flatMap(([, log]) => parser.executeOnLogs([log]))
+          values: result.values.flatMap(([, log]) => parser.executeOnLogs([log])) as any[]
         };
       }),
       timerange: utils.queryRangeStreamTimeRange(data.data.result)
     };
   }
 
-  async queryRange<T = string>(
+  async queryRange<T extends LokiPatternType = string>(
     logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeResponse<T>> {
-    const { parser = new NoopLogParser<T>() } = options;
+    const { pattern = new NoopPattern() } = options;
+    const parser: PatternShape<any> = pattern instanceof NoopPattern ?
+      pattern : new Pattern(pattern);
 
     const { data } = await this.#fetchQueryRange<LokiMatrix | LokiStream>(logQL, options);
 
@@ -139,7 +151,7 @@ export class Loki {
     }
 
     return {
-      values: parser.executeOnLogs(inlinedLogs.values),
+      values: parser.executeOnLogs(inlinedLogs.values) as any[],
       timerange: inlinedLogs.timerange
     };
   }

@@ -1,3 +1,9 @@
+// Import Third-party Dependencies
+import {
+  LokiLiteralPattern,
+  LokiPatternType
+} from "@sigyn/pattern";
+
 // Import Internal Dependencies
 import { TimeRange } from "./utils.js";
 
@@ -11,7 +17,7 @@ export interface LokiMatrix {
   values: [unixEpoch: string, value: string][];
 }
 
-export interface LokiStreamResult<T = string> {
+export interface LokiStreamResult<T> {
   stream: Record<string, string>;
   values: T[];
 }
@@ -63,13 +69,13 @@ export type LokiStandardBaseResponse<S> = {
   data: S;
 }
 
-export interface QueryRangeResponse<T> {
-  values: T[];
+export interface QueryRangeResponse<T extends LokiPatternType> {
+  values: LokiLiteralPattern<T>[];
   timerange: TimeRange | null;
 }
 
-export interface QueryRangeStreamResponse<T> {
-  logs: LokiStreamResult<T>[];
+export interface QueryRangeStreamResponse<T extends LokiPatternType> {
+  logs: LokiStreamResult<LokiLiteralPattern<T>>[];
   timerange: TimeRange | null;
 }
 

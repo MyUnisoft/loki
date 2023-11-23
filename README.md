@@ -63,6 +63,20 @@ const logs = await api.Loki.queryRange(
 console.log(logs);
 ```
 
+You can also provide a Loki pattern to automatically parse logs (and infer the right type with TypeScript)
+
+```ts
+const logs = await api.Loki.queryRange(
+  `{app="serviceName", env="production"}`
+  {
+    pattern: "<verb> <_> <endpoint>"
+  }
+);
+for (const { verb, endpoint } of logs) {
+  console.log({verb, endpoint });
+}
+```
+
 ## API
 
 ### GrafanaAPI
@@ -84,8 +98,6 @@ export interface GrafanaApiOptions {
 
 - [Loki](./docs/Loki.md)
 - [Datasources](./docs/Datasources.md)
-
-You can also parse logs using our internal [LogParser](./docs/LogParser.md) implementation.
 
 ## Contributors ✨
 
