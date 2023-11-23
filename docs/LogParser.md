@@ -1,6 +1,6 @@
 # LogParser
 
-> **Note**
+> [!CAUTION]
 > We are working on a new @sigyn/pattern package to replace this
 
 The LogParser class make easy to parse/type logs
