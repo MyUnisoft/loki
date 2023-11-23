@@ -1,3 +1,6 @@
+// Import Internal Dependencies
+import { TimeRange } from "./utils.js";
+
 export interface LokiStream {
   stream: Record<string, string>;
   values: [unixEpoch: string, log: string][];
@@ -60,3 +63,14 @@ export type LokiStandardBaseResponse<S> = {
   data: S;
 }
 
+export interface QueryRangeResponse<T> {
+  values: T[];
+  timerange: TimeRange | null;
+}
+
+export interface QueryRangeStreamResponse<T> {
+  logs: LokiStreamResult<T>[];
+  timerange: TimeRange | null;
+}
+
+export { TimeRange };
