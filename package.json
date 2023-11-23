@@ -50,6 +50,7 @@
     "@myunisoft/httpie": "^2.0.1",
     "@openally/auto-url": "^1.0.1",
     "@sigyn/logql": "^2.0.0",
+    "@sigyn/pattern": "^1.0.0",
     "dayjs": "^1.11.10",
     "ms": "^2.1.3"
   }

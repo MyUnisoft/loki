@@ -8,7 +8,6 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import {
   GrafanaApi,
-  LogParser,
   LokiStandardBaseResponse,
   RawQueryRangeResponse
 } from "../src/index.js";
@@ -127,8 +126,8 @@ describe("GrafanaApi.Loki", () => {
 
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.Loki.queryRange<{ name: string }>("{app='foo'}", {
-        parser: new LogParser("hello '<name:alphanum>'")
+      const result = await sdk.Loki.queryRange("{app='foo'}", {
+        pattern: "hello '<name>'"
       });
       assert.strictEqual(result.values.length, 1);
       assert.deepEqual(
@@ -150,8 +149,8 @@ describe("GrafanaApi.Loki", () => {
 
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.Loki.queryRangeStream<{ name: string }>("{app='foo'}", {
-        parser: new LogParser("hello '<name:alphanum>'")
+      const result = await sdk.Loki.queryRangeStream("{app='foo'}", {
+        pattern: "hello '<name>'"
       });
 
       assert.strictEqual(result.logs.length, 1);
@@ -175,8 +174,8 @@ describe("GrafanaApi.Loki", () => {
 
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.Loki.queryRangeStream<{ name: string }>("{app='foo'}", {
-        parser: new LogParser("hello '<name:alphanum>'")
+      const result = await sdk.Loki.queryRangeStream("{app='foo'}", {
+        pattern: "hello '<name>'"
       });
 
       assert.deepEqual(
