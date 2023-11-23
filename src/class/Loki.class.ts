@@ -1,4 +1,3 @@
-/* eslint-disable func-style */
 // Import Third-party Dependencies
 import * as httpie from "@myunisoft/httpie";
 import autoURL from "@openally/auto-url";
@@ -8,11 +7,13 @@ import { LogQL, StreamSelector } from "@sigyn/logql";
 import * as utils from "../utils.js";
 import {
   LokiStandardBaseResponse,
-  LokiStreamResult,
   RawQueryRangeResponse,
   LokiStream,
-  LokiMatrix
+  LokiMatrix,
+  QueryRangeResponse,
+  QueryRangeStreamResponse
 } from "../types.js";
+import { ApiCredential } from "./ApiCredential.class.js";
 import { NoopLogParser, LogParserLike } from "./LogParser.class.js";
 
 // CONSTANTS
@@ -22,7 +23,7 @@ const kAutoURLGrafanaTransformer = {
   end: kDurationTransformer
 };
 
-export interface LokiQueryAPIOptions {
+interface LokiQueryBaseOptions {
   /**
    * @default 100
    */
@@ -32,19 +33,8 @@ export interface LokiQueryAPIOptions {
   since?: string;
 }
 
-export interface LokiQueryOptions<T> extends LokiQueryAPIOptions {
+export interface LokiQueryOptions<T> extends LokiQueryBaseOptions {
   parser?: LogParserLike<T>;
-}
-
-export interface GrafanaLokiConstructorOptions {
-  /**
-   * Grafana API Token
-   */
-  apiToken?: string;
-  /**
-   * Remote Grafana root API URL
-   */
-  remoteApiURL: string | URL;
 }
 
 export interface LokiLabelsOptions {
@@ -72,42 +62,6 @@ export interface LokiLabelsOptions {
   since?: string;
 }
 
-export interface LokiDatasource {
-  id: number;
-  uid: string;
-  orgId: number;
-  name: string;
-  type: string;
-  typeName?: string;
-  typeLogoUrl: string;
-  access: string;
-  url: string;
-  password?: string;
-  user: string;
-  database: string;
-  basicAuth: boolean;
-  basicAuthUser?: string;
-  basicAuthPassword?: string;
-  withCredentials?: boolean;
-  isDefault: boolean;
-  jsonData?: {
-    authType?: string;
-    defaultRegion?: string;
-    logLevelField?: string;
-    logMessageField?: string;
-    timeField?: string;
-    maxConcurrentShardRequests?: number;
-    maxLines?: number;
-    graphiteVersion?: string;
-    graphiteType?: string;
-  };
-  secureJsonFields?: {
-    basicAuthPassword?: boolean;
-  };
-  version?: number;
-  readOnly: boolean;
-}
-
 export interface LokiLabelValuesOptions extends LokiLabelsOptions {
   /**
    * A set of log stream selector that selects the streams to match and return label values for <name>.
@@ -117,42 +71,21 @@ export interface LokiLabelValuesOptions extends LokiLabelsOptions {
   query?: string;
 }
 
-export interface QueryRangeResponse<T> {
-  values: T[];
-  timerange: utils.TimeRange | null;
-}
-
-export interface QueryRangeStreamResponse<T> {
-  logs: LokiStreamResult<T>[];
-  timerange: utils.TimeRange | null;
-}
-
-export class GrafanaLoki {
-  private apiToken: string;
+export class Loki {
   private remoteApiURL: URL;
+  private credential: ApiCredential;
 
-  constructor(options: GrafanaLokiConstructorOptions) {
-    const { apiToken, remoteApiURL } = options;
-
-    this.apiToken = apiToken ?? process.env.GRAFANA_API_TOKEN!;
-    if (typeof this.apiToken === "undefined") {
-      throw new Error("An apiToken must be provided to use the Grafana Loki API");
-    }
-
-    this.remoteApiURL = typeof remoteApiURL === "string" ? new URL(remoteApiURL) : remoteApiURL;
-  }
-
-  get httpOptions() {
-    return {
-      headers: {
-        authorization: `Bearer ${this.apiToken}`
-      }
-    };
+  constructor(
+    remoteApiURL: URL,
+    credential: ApiCredential
+  ) {
+    this.remoteApiURL = remoteApiURL;
+    this.credential = credential;
   }
 
   #fetchQueryRange<T>(
     logQL: LogQL | string,
-    options: LokiQueryAPIOptions = {}
+    options: LokiQueryBaseOptions = {}
   ): Promise<httpie.RequestResponse<RawQueryRangeResponse<T>>> {
     const { limit = 100 } = options;
 
@@ -167,7 +100,7 @@ export class GrafanaLoki {
     );
 
     return httpie.get<RawQueryRangeResponse<T>>(
-      uri, this.httpOptions
+      uri, this.credential.httpOptions
     );
   }
 
@@ -211,46 +144,6 @@ export class GrafanaLoki {
     };
   }
 
-  async datasources(): Promise<LokiDatasource[]> {
-    const uri = new URL("/api/datasources", this.remoteApiURL);
-
-    const { data } = await httpie.get<LokiDatasource[]>(uri, this.httpOptions);
-
-    return data;
-  }
-
-  async datasourceById(id: string | number): Promise<LokiDatasource> {
-    const uri = new URL(`/api/datasources/${id}`, this.remoteApiURL);
-
-    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
-
-    return data;
-  }
-
-  async datasourceByName(name: string): Promise<LokiDatasource> {
-    const uri = new URL(`/api/datasources/name/${name}`, this.remoteApiURL);
-
-    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
-
-    return data;
-  }
-
-  async datasourceByUid(uid: string): Promise<LokiDatasource> {
-    const uri = new URL(`/api/datasources/uid/${uid}`, this.remoteApiURL);
-
-    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
-
-    return data;
-  }
-
-  async datasourceIdByName(name: string): Promise<LokiDatasource> {
-    const uri = new URL(`/api/datasources/id/${name}`, this.remoteApiURL);
-
-    const { data } = await httpie.get<LokiDatasource>(uri, this.httpOptions);
-
-    return data;
-  }
-
   async labels(options: LokiLabelsOptions = {}): Promise<string[]> {
     const uri = autoURL(
       new URL("loki/api/v1/labels", this.remoteApiURL),
@@ -259,7 +152,7 @@ export class GrafanaLoki {
     );
 
     const { data: labels } = await httpie.get<LokiStandardBaseResponse<string[]>>(
-      uri, this.httpOptions
+      uri, this.credential.httpOptions
     );
 
     return labels.status === "success" ? labels.data : [];
@@ -276,7 +169,7 @@ export class GrafanaLoki {
     );
 
     const { data: labelValues } = await httpie.get<LokiStandardBaseResponse<string[]>>(
-      uri, this.httpOptions
+      uri, this.credential.httpOptions
     );
 
     return labelValues.status === "success" ? labelValues.data : [];

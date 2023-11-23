@@ -3,7 +3,7 @@
 </h1></p>
 
 <p align="center">
-  Node.js Grafana Loki SDK
+  Node.js Grafana API SDK (Loki, Datasources ..)
 </p>
 
 <p align="center">
@@ -41,20 +41,19 @@ $ yarn add @myunisoft/loki
 ## 📚 Usage
 
 ```ts
-import { GrafanaLoki } from "@myunisoft/loki";
-import { LogQL } from "@sigyn/logql";
+import { GrafanaApi } from "@myunisoft/loki";
+import { LogQL, StreamSelector } from "@sigyn/logql";
 
-const api = new GrafanaLoki({
+const api = new GrafanaApi({
   // Note: if not provided, it will load process.env.GRAFANA_API_TOKEN
   apiToken: "...",
   remoteApiURL: "https://name.loki.com"
 });
 
-const ql = new LogQL();
-ql.streamSelector.set("app", "serviceName");
-ql.streamSelector.set("env", "production");
-
-const logs = await api.queryRange(
+const ql = new LogQL(
+  new StreamSelector({ app: "serviceName", env: "production" })
+);
+const logs = await api.Loki.queryRange(
   ql, // or string `{app="serviceName", env="production"}`
   {
     start: "1d",
@@ -64,242 +63,29 @@ const logs = await api.queryRange(
 console.log(logs);
 ```
 
-queryRange options is described by the following TypeScript interface
-```ts
-export interface LokiQueryOptions<T> {
-  /**
-   * @default 100
-   */
-  limit?: number;
-  start?: number | string;
-  end?: number | string;
-  since?: string;
-  parser?: LogParserLike<T>;
-}
-```
-
-<em>start</em> and <em>end</em> arguments can be either a unix timestamp or a duration like `6h`.
-
 ## API
 
-### queryRange
-
-You can provide a custom parser to queryRange (by default it inject a NoopParser doing nothing).
+### GrafanaAPI
 
 ```ts
-import { LogParser } from "@myunisoft/loki";
-
-interface CustomParser {
-  date: string;
-  requestId: string;
-  endpoint: string;
-  method: string;
-  statusCode: number;
-}
-
-const customParser = new LogParser<CustomParser>(
-  "<date>: [req-<requestId:word>] <endpoint> <method:httpMethod> <statusCode:httpStatusCode>"
-);
-
-const logs = await api.queryRange(
-  `{app="serviceName", env="production"}`,
-  {
-    parser: customParser
-  }
-);
-for (const data of logs) {
-  console.log(`requestId: ${data.requestId}`);
-}
-```
-
-### queryRangeStream
-
-Same as `queryRange` but returns the labels key-value pairs stream
-
-```ts
-const customParser = new LogParser<CustomParser>(
-  "<date>: [req-<requestId:word>] <endpoint> <method:httpMethod> <statusCode:httpStatusCode>"
-);
-
-const logs = await api.queryRangeStream(
-  `{app="serviceName", env="production"}`,
-);
-for (const { stream, values } of logs) {
-  // Record<string, string>
-  console.log(stream);
-  // string[]
-  console.log(values);
-}
-
-interface LokiStreamResult<T = string> {
-  stream: Record<string, string>;
-  values: T[];
-}
-```
-
-### datasources
-
-```ts
-interface LokiDatasource {
-  id: number;
-  uid: string;
-  orgId: number;
-  name: string;
-  type: string;
-  typeName?: string;
-  typeLogoUrl: string;
-  access: string;
-  url: string;
-  password?: string;
-  user: string;
-  database: string;
-  basicAuth: boolean;
-  basicAuthUser?: string;
-  basicAuthPassword?: string;
-  withCredentials?: boolean;
-  isDefault: boolean;
-  jsonData?: {
-    authType?: string;
-    defaultRegion?: string;
-    logLevelField?: string;
-    logMessageField?: string;
-    timeField?: string;
-    maxConcurrentShardRequests?: number;
-    maxLines?: number;
-    graphiteVersion?: string;
-    graphiteType?: string;
-  };
-  secureJsonFields?: {
-    basicAuthPassword?: boolean;
-  };
-  version?: number;
-  readOnly: boolean;
-}
-```
-
-```ts
-const datasources = await api.datasources();
-```
-
-`datasources()` retrieves all datasources.
-
-### datasourceById
-
-```ts
-const datasource = await api.datasourceById(1);
-// or
-const datasource = await api.datasourceById("1");
-```
-
-`datasourceById(id: number | string)` retrieves a single datasource given it's id.
-
-### datasourceByName
-
-```ts
-const datasource = await api.datasourceByName("Loki");
-```
-
-`datasourceByName(name: string)` retrieves a single datasource given it's name.
-
-### datasourceByUid
-
-```ts
-const datasource = await api.datasourceByUid("303030xGz");
-```
-
-`datasourceByUid(name: string)` retrieves a single datasources given it's uid.
-
-### datasourceIdByName
-
-```ts
-const id = await api.datasourceIdByName("Loki");
-```
-
-`datasourceIdByName(name: string)` retrieves datasource id given it's name.
-
-### labels
-
-```ts
-const labels = await api.labels();
-```
-
-`labels(options = {})` retrieves the list of known labels within a given time span. Loki may use a larger time span than the one specified. It accepts the following options:
-
-```ts
-interface LokiLabelsOptions {
+export interface GrafanaApiOptions {
   /**
-   * The start time for the query as
-   * - a nanosecond Unix epoch.
-   * - a duration (i.e "2h")
-   *
-   * Default to 6 hours ago.
+   * Grafana API Token
    */
-  start?: number | string;
+  apiToken?: string;
   /**
-   * The end time for the query as
-   * - a nanosecond Unix epoch.
-   * - a duration (i.e "2h")
-   *
-   * Default to now
+   * Remote Grafana root API URL
    */
-  end?: number | string;
-  /**
-   * A duration used to calculate start relative to end. If end is in the future, start is calculated as this duration before now.
-   *
-   * Any value specified for start supersedes this parameter.
-   */
-  since?: string;
-}
+  remoteApiURL: string | URL;
+}s
 ```
 
-### labelValues
+### Sub-class
 
-```ts
-const appLabelValues = await api.labelValues("app");
-```
+- [Loki](./docs/Loki.md)
+- [Datasources](./docs/Datasources.md)
 
-`labelValues(label, options = {})` retrieves the list of known values for a given label within a given time span. Loki may use a larger time span than the one specified.
-
-```ts
-interface LokiLabelValueOptions {
-  /**
-   * The start time for the query as
-   * - a nanosecond Unix epoch.
-   * - a duration (i.e "2h")
-   *
-   * Default to 6 hours ago.
-   */
-  start?: number | string;
-  /**
-   * The end time for the query as
-   * - a nanosecond Unix epoch.
-   * - a duration (i.e "2h")
-   *
-   * Default to now
-   */
-  end?: number | string;
-  /**
-   * A duration used to calculate start relative to end. If end is in the future, start is calculated as this duration before now.
-   *
-   * Any value specified for start supersedes this parameter.
-   */
-  since?: string;
-  /**
-   * A set of log stream selector that selects the streams to match and return label values for <name>.
-   *
-   * Example: {"app": "myapp", "environment": "dev"}
-   */
-  query?: string;
-}
-```
-
-### series
-
-```ts
-const series = await api.series(`{env="production"}`);
-```
-
-Returns the list of time series that match a certain label set.
+You can also parse logs using our internal [LogParser](./docs/LogParser.md) implementation.
 
 ## Contributors ✨
 
