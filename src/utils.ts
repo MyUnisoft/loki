@@ -9,6 +9,9 @@ export function durationToUnixTimestamp(duration: string | number): string {
   if (typeof duration === "number") {
     return String(duration);
   }
+  if (!Object.is(Number(duration), NaN)) {
+    return duration;
+  }
 
   return dayjs()
     .subtract(ms(duration), "milliseconds")
