@@ -19,7 +19,7 @@
     "test": "test"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "publishConfig": {
     "@myunisoft:registry": "https://registry.npmjs.org/"
