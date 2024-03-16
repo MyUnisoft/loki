@@ -116,9 +116,8 @@ export class Loki {
     logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeStreamResponse<T>> {
-    const { pattern = new NoopPattern() } = options;
-    const parser: PatternShape<any> = pattern instanceof NoopPattern ?
-      pattern : new Pattern(pattern);
+    const parser: PatternShape<T> = options.pattern ?
+      new Pattern(options.pattern) : new NoopPattern<T>();
 
     const { data } = await this.#fetchQueryRange<LokiStream>(logQL, options);
 
@@ -126,7 +125,7 @@ export class Loki {
       logs: data.data.result.map((result) => {
         return {
           stream: result.stream,
-          values: result.values.flatMap(([, log]) => parser.executeOnLogs([log])) as any[]
+          values: result.values.flatMap(([, log]) => parser.executeOnLogs([log]))
         };
       }),
       timerange: utils.queryRangeStreamTimeRange(data.data.result)
@@ -137,9 +136,8 @@ export class Loki {
     logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeResponse<T>> {
-    const { pattern = new NoopPattern() } = options;
-    const parser: PatternShape<any> = pattern instanceof NoopPattern ?
-      pattern : new Pattern(pattern);
+    const parser: PatternShape<T> = options.pattern ?
+      new Pattern(options.pattern) : new NoopPattern<T>();
 
     const { data } = await this.#fetchQueryRange<LokiMatrix | LokiStream>(logQL, options);
 
@@ -151,7 +149,7 @@ export class Loki {
     }
 
     return {
-      values: parser.executeOnLogs(inlinedLogs.values) as any[],
+      values: parser.executeOnLogs(inlinedLogs.values),
       timerange: inlinedLogs.timerange
     };
   }
