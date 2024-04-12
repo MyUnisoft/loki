@@ -35,5 +35,19 @@ describe("ApiCredential", () => {
         }
       });
     });
+
+    it("should inject User-Agent header", () => {
+      const apiToken = crypto.randomBytes(4).toString("hex");
+      const userAgent = "my-super-agent";
+
+      const sdk = new ApiCredential(apiToken, userAgent);
+
+      assert.deepEqual(sdk.httpOptions, {
+        headers: {
+          authorization: `Bearer ${apiToken}`,
+          "User-Agent": userAgent
+        }
+      });
+    });
   });
 });
