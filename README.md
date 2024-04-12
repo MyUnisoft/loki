@@ -88,10 +88,15 @@ export interface GrafanaApiOptions {
    */
   apiToken?: string;
   /**
+   * User-agent HTTP header to forward to Grafana/Loki API
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agents
+   */
+  userAgent?: string;
+  /**
    * Remote Grafana root API URL
    */
   remoteApiURL: string | URL;
-}s
+}
 ```
 
 ### Sub-class
