@@ -47,7 +47,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@myunisoft/httpie": "^3.0.3",
+    "@myunisoft/httpie": "^4.0.1",
     "@openally/auto-url": "^1.0.1",
     "@sigyn/logql": "^2.0.0",
     "@sigyn/pattern": "^1.0.0",
