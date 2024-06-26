@@ -27,6 +27,7 @@
 ## 🚧 Requirements
 
 - [Node.js](https://nodejs.org/en/) version 18 or higher
+- A [reverse-proxy](https://github.com/MyUnisoft/loki-reverse-proxy) to safely expose Loki to internet (if required).
 
 ## 🚀 Getting Started
 
