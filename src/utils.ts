@@ -67,9 +67,15 @@ export function streamOrMatrixTimeRange(
 
   const flatLogs = result
     .flatMap(
-      (host) => host.values.map(transformStreamOrMatrixValue)
+      (host) => [
+        transformStreamOrMatrixValue(host.values.at(0)!),
+        transformStreamOrMatrixValue(host.values.at(-1)!)
+      ]
     )
     .sort((left, right) => (left.date.isBefore(right.date) ? 1 : -1));
 
-  return [flatLogs.at(0)!.date.unix(), flatLogs.at(-1)!.date.unix()];
+  return [
+    flatLogs.at(0)!.date.unix(),
+    flatLogs.at(-1)!.date.unix()
+  ];
 }
