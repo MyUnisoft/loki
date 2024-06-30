@@ -9,7 +9,8 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 import {
   GrafanaApi,
   LokiStandardBaseResponse,
-  RawQueryRangeResponse
+  RawQueryRangeResponse,
+  LokiMatrix
 } from "../src/index.js";
 
 // CONSTANTS
@@ -84,12 +85,42 @@ describe("GrafanaApi.Loki", () => {
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
       const result = await sdk.Loki.queryRangeStream("{app='foo'}");
+      const resultLogs = result.logs[0]!;
 
+      assert.ok(
+        resultLogs.values.every((arr) => typeof arr[0] === "number")
+      );
       assert.deepEqual(
-        result.logs[0].values,
+        resultLogs.values.map((arr) => arr[1]),
         expectedLogs.slice(0)
       );
-      assert.deepEqual(result.logs[0].stream, { foo: "bar" });
+      assert.deepEqual(resultLogs.stream, { foo: "bar" });
+    });
+
+    it("should return expectedLogs with no modification (using NoopParser, queryRangeMatrix)", async() => {
+      const expectedLogs = ["hello world", "foobar"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockMatrixResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.Loki.queryRangeMatrix("{app='foo'}");
+      const resultLogs = result.logs[0]!;
+
+      assert.ok(
+        resultLogs.values.every((arr) => typeof arr[0] === "number")
+      );
+      assert.deepEqual(
+        resultLogs.values.map((arr) => arr[1]),
+        expectedLogs.slice(0)
+      );
+      assert.deepEqual(resultLogs.metric, { foo: "bar" });
     });
 
     it("should return empty list of logs (using NoopParser, queryRangeStream)", async() => {
@@ -152,13 +183,14 @@ describe("GrafanaApi.Loki", () => {
       const result = await sdk.Loki.queryRangeStream("{app='foo'}", {
         pattern: "hello '<name>'"
       });
+      const resultLogs = result.logs[0]!;
 
       assert.strictEqual(result.logs.length, 1);
       assert.deepEqual(
-        result.logs[0].values[0],
+        resultLogs.values[0][1],
         { name: "Thomas" }
       );
-      assert.deepEqual(result.logs[0].stream, { foo: "bar" });
+      assert.deepEqual(resultLogs.stream, { foo: "bar" });
     });
 
     it("should return empty list of logs (using LogParser, queryRangeStream)", async() => {
@@ -324,6 +356,22 @@ function mockStreamResponse(logs: string[]): DeepPartial<RawQueryRangeResponse> 
   };
 }
 
+function mockMatrixResponse(logs: string[]): DeepPartial<RawQueryRangeResponse<LokiMatrix>> {
+  return {
+    status: "success",
+    data: {
+      resultType: "matrix",
+      result: logs.length > 0 ? [
+        {
+          metric: { foo: "bar" },
+          values: logs.map((log) => [getNanoSecTime(), log])
+        }
+      ] : [],
+      stats: {}
+    }
+  };
+}
+
 function mockLabelResponse<T>(
   status: "success" | "failed",
   response: T[]
@@ -337,6 +385,6 @@ function mockLabelResponse<T>(
 function getNanoSecTime() {
   const hrTime = process.hrtime();
 
-  return String((hrTime[0] * 1000000000) + hrTime[1]);
+  return (hrTime[0] * 1000000000) + hrTime[1];
 }
 

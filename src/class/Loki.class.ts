@@ -20,7 +20,8 @@ import {
   LokiStream,
   LokiMatrix,
   QueryRangeResponse,
-  QueryRangeStreamResponse
+  QueryRangeStreamResponse,
+  QueryRangeMatrixResponse
 } from "../types.js";
 import { ApiCredential } from "./ApiCredential.class.js";
 
@@ -112,6 +113,29 @@ export class Loki {
     );
   }
 
+  async queryRangeMatrix<T extends LokiPatternType = string>(
+    logQL: LogQL | string,
+    options: LokiQueryOptions<T> = {}
+  ): Promise<QueryRangeMatrixResponse<T>> {
+    const { pattern = new NoopPattern() } = options;
+    const parser: PatternShape<any> = pattern instanceof NoopPattern ?
+      pattern : new Pattern(pattern);
+
+    const { data } = await this.#fetchQueryRange<LokiMatrix>(logQL, options);
+
+    return {
+      logs: data.data.result.map((result) => {
+        return {
+          metric: result.metric,
+          values: result.values
+            .map(([unixEpoch, log]) => [unixEpoch, ...parser.executeOnLogs([log])])
+            .filter((log) => log.length > 1) as any[]
+        };
+      }),
+      timerange: utils.streamOrMatrixTimeRange(data.data.result)
+    };
+  }
+
   async queryRangeStream<T extends LokiPatternType = string>(
     logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
@@ -126,10 +150,12 @@ export class Loki {
       logs: data.data.result.map((result) => {
         return {
           stream: result.stream,
-          values: result.values.flatMap(([, log]) => parser.executeOnLogs([log])) as any[]
+          values: result.values
+            .map(([unixEpoch, log]) => [unixEpoch, ...parser.executeOnLogs([log])])
+            .filter((log) => log.length > 1) as any[]
         };
       }),
-      timerange: utils.queryRangeStreamTimeRange(data.data.result)
+      timerange: utils.streamOrMatrixTimeRange(data.data.result)
     };
   }
 
