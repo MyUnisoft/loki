@@ -1,5 +1,5 @@
 // Import Third-party Dependencies
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import ms from "ms";
 
 // Import Internal Dependencies
@@ -23,9 +23,9 @@ export function escapeStringRegExp(str: string): string {
   return str.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
 }
 
-export function transformStreamValue(
-  value: [unixEpoch: string, log: string]
-) {
+export function transformStreamOrMatrixValue(
+  value: [unixEpoch: number, log: string]
+): { date: Dayjs; log: string } {
   const [unixEpoch, log] = value;
 
   return {
@@ -45,7 +45,7 @@ export function inlineLogs(
 
   const flatLogs = result.data.result
     .flatMap(
-      (host) => host.values.map(transformStreamValue)
+      (host) => host.values.map(transformStreamOrMatrixValue)
     )
     .sort((left, right) => (left.date.isBefore(right.date) ? 1 : -1));
   if (flatLogs.length === 0) {
@@ -58,14 +58,16 @@ export function inlineLogs(
   };
 }
 
-export function queryRangeStreamTimeRange(result: LokiStream[]): [number, number] | null {
+export function streamOrMatrixTimeRange(
+  result: (LokiStream | LokiMatrix)[]
+): [number, number] | null {
   if (result.length === 0) {
     return null;
   }
 
   const flatLogs = result
     .flatMap(
-      (host) => host.values.map(transformStreamValue)
+      (host) => host.values.map(transformStreamOrMatrixValue)
     )
     .sort((left, right) => (left.date.isBefore(right.date) ? 1 : -1));
 

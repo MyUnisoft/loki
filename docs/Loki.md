@@ -14,7 +14,8 @@ const api = new GrafanaApi({
 await api.Loki.series(`{env="production"}`);
 ```
 
-Note that a TimeRange is defined as following:
+Note that a TimeRange is defined as follows:
+
 ```ts
 export type TimeRange = [first: number, last: number];
 ```
@@ -23,7 +24,9 @@ export type TimeRange = [first: number, last: number];
 
 ### queryRange< T = string >(logQL: LogQL | string, options?: LokiQueryOptions< T >): Promise< QueryRangeResponse< T > >
 
-Note that you can provide a custom parser to queryRange (by default it inject a NoopParser doing nothing).
+The `queryRange` method returns raw logs (without timestamp or metric/stream labels).
+
+You can provide a custom parser to queryRange (by default it injects a **NoopParser** doing nothing).
 
 ```ts
 const logs = await api.Loki.queryRange(
@@ -32,7 +35,9 @@ const logs = await api.Loki.queryRange(
 console.log(logs);
 ```
 
-queryRange options is described by the following TypeScript interface
+#### options
+
+The queryRange options are described by the following TypeScript interface:
 
 ```ts
 export interface LokiQueryOptions<T> {
@@ -47,7 +52,9 @@ export interface LokiQueryOptions<T> {
 }
 ```
 
-<em>start</em> and <em>end</em> arguments can be either a unix timestamp or a duration like `6h`.
+<em>start</em> and <em>end</em> arguments can be either a Unix timestamp or a duration like `6h`.
+
+#### response
 
 The response is described by the following interface:
 ```ts
@@ -56,6 +63,11 @@ export interface QueryRangeResponse<T extends LokiPatternType> {
   timerange: TimeRange | null;
 }
 ```
+
+`timerange` is **null** when there are no logs available with the given LogQL.
+
+> [!CAUTION]
+> When you use an incorrect pattern, any logs that are not correctly parsed will be removed from the result.
 
 ### queryRangeStream< T = string >(logQL: LogQL | string, options?: LokiQueryOptions< T >): Promise< QueryRangeStreamResponse< T > >
 
@@ -68,21 +80,46 @@ const logs = await api.Loki.queryRangeStream(
 for (const { stream, values } of logs) {
   // Record<string, string>
   console.log(stream);
-  // string[]
+  // [unixEpoch: number, value: T][]
   console.log(values);
 }
 ```
 
 The response is described by the following interface:
 ```ts
-export interface QueryRangeStreamResponse<T extends LokiPatternType> {
+interface QueryRangeStreamResponse<T extends LokiPatternType> {
   logs: LokiStreamResult<LokiLiteralPattern<T>>[];
   timerange: TimeRange | null;
 }
 
-interface LokiStreamResult<T = string> {
+interface LokiStreamResult<T> {
   stream: Record<string, string>;
-  values: T[];
+  values: [unixEpoch: number, value: T][];
+}
+```
+
+### queryRangeMatrix< T = string >(logQL: LogQL | string, options?: LokiQueryOptions< T >): Promise< QueryRangeMatrixResponse< T > >
+
+Same as `queryRange` but returns the labels key-value pairs metric
+
+Matrix are returned for [Metric queries](https://grafana.com/docs/loki/latest/query/metric_queries/)
+```
+count_over_time({ label="value" }[5m])
+```
+
+---
+
+The response is described by the following interface:
+
+```ts
+interface QueryRangeMatrixResponse<T extends LokiPatternType> {
+  logs: LokiMatrixResult<LokiLiteralPattern<T>>[];
+  timerange: TimeRange | null;
+}
+
+interface LokiMatrixResult<T> {
+  metric: Record<string, string>;
+  values: [unixEpoch: number, value: T][];
 }
 ```
 

@@ -9,17 +9,22 @@ import { TimeRange } from "./utils.js";
 
 export interface LokiStream {
   stream: Record<string, string>;
-  values: [unixEpoch: string, log: string][];
+  values: [unixEpoch: number, log: string][];
 }
 
 export interface LokiMatrix {
   metric: Record<string, string>;
-  values: [unixEpoch: string, value: string][];
+  values: [unixEpoch: number, value: string][];
+}
+
+export interface LokiMatrixResult<T> {
+  metric: Record<string, string>;
+  values: [unixEpoch: number, value: T][];
 }
 
 export interface LokiStreamResult<T> {
   stream: Record<string, string>;
-  values: T[];
+  values: [unixEpoch: number, value: T][];
 }
 
 export interface RawQueryRangeResponse<T = LokiStream> {
@@ -76,6 +81,11 @@ export interface QueryRangeResponse<T extends LokiPatternType> {
 
 export interface QueryRangeStreamResponse<T extends LokiPatternType> {
   logs: LokiStreamResult<LokiLiteralPattern<T>>[];
+  timerange: TimeRange | null;
+}
+
+export interface QueryRangeMatrixResponse<T extends LokiPatternType> {
+  logs: LokiMatrixResult<LokiLiteralPattern<T>>[];
   timerange: TimeRange | null;
 }
 
