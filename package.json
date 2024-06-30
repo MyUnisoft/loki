@@ -1,6 +1,6 @@
 {
   "name": "@myunisoft/loki",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Node.js Grafana Loki SDK",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
