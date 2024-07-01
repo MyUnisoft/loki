@@ -8,10 +8,9 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import {
   GrafanaApi,
-  LokiStandardBaseResponse,
-  RawQueryRangeResponse,
-  LokiMatrix
+  LokiStandardBaseResponse
 } from "../src/index.js";
+import { mockMatrixResponse, mockStreamResponse } from "./utils/logs.factory.js";
 
 // CONSTANTS
 const kDummyURL = "https://nodejs.org";
@@ -336,42 +335,6 @@ describe("GrafanaApi.Loki", () => {
   });
 });
 
-type DeepPartial<T> = T extends object ? {
-  [P in keyof T]?: DeepPartial<T[P]>;
-} : T;
-
-function mockStreamResponse(logs: string[]): DeepPartial<RawQueryRangeResponse> {
-  return {
-    status: "success",
-    data: {
-      resultType: "streams",
-      result: logs.length > 0 ? [
-        {
-          stream: { foo: "bar" },
-          values: logs.map((log) => [getNanoSecTime(), log])
-        }
-      ] : [],
-      stats: {}
-    }
-  };
-}
-
-function mockMatrixResponse(logs: string[]): DeepPartial<RawQueryRangeResponse<LokiMatrix>> {
-  return {
-    status: "success",
-    data: {
-      resultType: "matrix",
-      result: logs.length > 0 ? [
-        {
-          metric: { foo: "bar" },
-          values: logs.map((log) => [getNanoSecTime(), log])
-        }
-      ] : [],
-      stats: {}
-    }
-  };
-}
-
 function mockLabelResponse<T>(
   status: "success" | "failed",
   response: T[]
@@ -381,10 +344,3 @@ function mockLabelResponse<T>(
     data: response
   };
 }
-
-function getNanoSecTime() {
-  const hrTime = process.hrtime();
-
-  return (hrTime[0] * 1000000000) + hrTime[1];
-}
-
