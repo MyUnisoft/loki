@@ -48,22 +48,28 @@ export interface LokiQueryRangeStats {
 }
 
 interface RawQueryRangeTemplate<
-  Type extends "matrix" | "streams",
-  Result extends LokiMatrix | LokiStream
+  Type extends "matrix" | "streams" | "vector",
+  Result extends LokiMatrix[] | LokiVector | LokiStream[]
 > {
   status: "success";
   data: {
     resultType: Type;
-    result: Result[];
+    result: Result;
     stats: LokiQueryRangeStats;
   }
 }
 
-export type RawQueryRangeResponse<T extends "matrix" | "streams"> = T extends "matrix" ?
-  RawQueryRangeTemplate<T, LokiMatrix> :
-  RawQueryRangeTemplate<T, LokiStream>;
+export type RawQueryRangeResponse<T extends "matrix" | "streams" | "vector"> =
+  T extends "matrix" ? RawQueryRangeTemplate<T, LokiMatrix[]> :
+  T extends "streams" ? RawQueryRangeTemplate<T, LokiStream[]> :
+  RawQueryRangeTemplate<T, LokiVector>;
 
 export type LokiLabels = Record<string, string>;
+
+export interface LokiVector {
+  metric: LokiLabels;
+  values: [unixEpoch: number, metric: string];
+}
 
 export interface LokiStream<T = string> {
   stream: LokiLabels;
