@@ -145,7 +145,7 @@ export class Loki {
 
     const { pattern = new NoopPattern() } = options;
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?
-      pattern : new Pattern(pattern);
+      pattern : new Pattern<any>(pattern);
 
     const { data } = await this.#fetchQueryRange<"streams">(
       logQL,
@@ -171,7 +171,7 @@ export class Loki {
   ): Promise<QueryRangeLogsResponse<T>> {
     const { pattern = new NoopPattern() } = options;
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?
-      pattern : new Pattern(pattern);
+      pattern : new Pattern<any>(pattern);
 
     const { data } = await this.#fetchQueryRange<"streams">(logQL, options);
 
