@@ -1,13 +1,12 @@
 // Import Internal Dependencies
 import {
-  RawQueryRangeResponse,
-  LokiMatrix
+  RawQueryRangeResponse
 } from "../../src/index.js";
 
 export function mockStreamResponse(
   logs: string[],
   unixGenerator = getNanoSecTime
-): RawQueryRangeResponse {
+): RawQueryRangeResponse<"streams"> {
   return {
     status: "success",
     data: {
@@ -26,7 +25,7 @@ export function mockStreamResponse(
 export function mockMatrixResponse(
   logs: string[],
   unixGenerator = getNanoSecTime
-): RawQueryRangeResponse<LokiMatrix> {
+): RawQueryRangeResponse<"matrix"> {
   return {
     status: "success",
     data: {

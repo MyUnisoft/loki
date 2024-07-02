@@ -37,7 +37,7 @@ export function transformStreamOrMatrixValue(
 export type TimeRange = [first: number, last: number];
 
 export function inlineLogs(
-  result: RawQueryRangeResponse<LokiStream | LokiMatrix>
+  result: RawQueryRangeResponse<"streams">
 ): null | { values: string[], timerange: TimeRange } {
   if (result.status !== "success") {
     return null;
