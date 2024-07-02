@@ -17,9 +17,7 @@ import * as utils from "../utils.js";
 import {
   LokiStandardBaseResponse,
   RawQueryRangeResponse,
-  LokiStream,
-  LokiMatrix,
-  QueryRangeResponse,
+  QueryRangeLogsResponse,
   QueryRangeStreamResponse,
   QueryRangeMatrixResponse
 } from "../types.js";
@@ -92,7 +90,7 @@ export class Loki {
     this.credential = credential;
   }
 
-  #fetchQueryRange<T>(
+  #fetchQueryRange<T extends "matrix" | "streams">(
     logQL: LogQL | string,
     options: LokiQueryOptions = {}
   ): Promise<httpie.RequestResponse<RawQueryRangeResponse<T>>> {
@@ -121,13 +119,18 @@ export class Loki {
       throw new Error("Log queries must use `queryRangeStream` method");
     }
 
-    const { data } = await this.#fetchQueryRange<LokiMatrix>(
+    const { data } = await this.#fetchQueryRange<"matrix">(
       logQL,
       options
     );
 
     return {
-      logs: data.data.result,
+      metrics: data.data.result.map((result) => {
+        return {
+          labels: result.metric,
+          values: result.values
+        };
+      }),
       timerange: utils.streamOrMatrixTimeRange(data.data.result)
     };
   }
@@ -144,15 +147,15 @@ export class Loki {
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?
       pattern : new Pattern(pattern);
 
-    const { data } = await this.#fetchQueryRange<LokiStream>(
+    const { data } = await this.#fetchQueryRange<"streams">(
       logQL,
       options
     );
 
     return {
-      logs: data.data.result.map((result) => {
+      streams: data.data.result.map((result) => {
         return {
-          stream: result.stream,
+          labels: result.stream,
           values: result.values
             .map(([unixEpoch, log]) => [unixEpoch, ...parser.executeOnLogs([log])])
             .filter((log) => log.length > 1) as any[]
@@ -165,22 +168,22 @@ export class Loki {
   async queryRange<T extends LokiPatternType = string>(
     logQL: LogQL | string,
     options: LokiQueryStreamOptions<T> = {}
-  ): Promise<QueryRangeResponse<T>> {
+  ): Promise<QueryRangeLogsResponse<T>> {
     const { pattern = new NoopPattern() } = options;
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?
       pattern : new Pattern(pattern);
 
-    const { data } = await this.#fetchQueryRange<LokiMatrix | LokiStream>(logQL, options);
+    const { data } = await this.#fetchQueryRange<"streams">(logQL, options);
 
     const inlinedLogs = utils.inlineLogs(data);
     if (inlinedLogs === null) {
       return {
-        values: [], timerange: null
+        logs: [], timerange: null
       };
     }
 
     return {
-      values: parser.executeOnLogs(inlinedLogs.values) as any[],
+      logs: parser.executeOnLogs(inlinedLogs.values) as any[],
       timerange: inlinedLogs.timerange
     };
   }

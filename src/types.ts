@@ -7,61 +7,6 @@ import {
 // Import Internal Dependencies
 import { TimeRange } from "./utils.js";
 
-export interface LokiStream {
-  stream: Record<string, string>;
-  values: [unixEpoch: number, log: string][];
-}
-
-export interface LokiMatrix {
-  metric: Record<string, string>;
-  values: [unixEpoch: number, value: string][];
-}
-
-export interface LokiStreamResult<T> {
-  stream: Record<string, string>;
-  values: [unixEpoch: number, value: T][];
-}
-
-export interface RawQueryRangeResponse<T = LokiStream> {
-  status: "success";
-  data: {
-    resultType: "matrix" | "streams";
-    result: T[];
-    stats: {
-      summary: {
-        bytesProcessedPerSecond: number;
-        linesProcessedPerSecond: number;
-        totalBytesProcessed: number;
-        totalLinesProcessed: number;
-        execTime: number;
-      };
-      store: {
-        totalChunksRef: number;
-        totalChunksDownloaded: number;
-        chunksDownloadTime: number;
-        headChunkBytes: number;
-        headChunkLines: number;
-        decompressedBytes: number;
-        decompressedLines: number;
-        compressedBytes: number;
-        totalDuplicates: number;
-      };
-      ingester: {
-        totalReached: number;
-        totalChunksMatched: number;
-        totalBatches: number;
-        totalLinesSent: number;
-        headChunkBytes: number;
-        headChunkLines: number;
-        decompressedBytes: number;
-        decompressedLines: number;
-        compressedBytes: number;
-        totalDuplicates: number;
-      }
-    };
-  }
-}
-
 export type LokiStandardBaseResponse<S> = {
   status: "failed";
 } | {
@@ -69,18 +14,84 @@ export type LokiStandardBaseResponse<S> = {
   data: S;
 }
 
-export interface QueryRangeResponse<T extends LokiPatternType> {
-  values: LokiLiteralPattern<T>[];
+export interface LokiQueryRangeStats {
+  summary: {
+    bytesProcessedPerSecond: number;
+    linesProcessedPerSecond: number;
+    totalBytesProcessed: number;
+    totalLinesProcessed: number;
+    execTime: number;
+  };
+  store: {
+    totalChunksRef: number;
+    totalChunksDownloaded: number;
+    chunksDownloadTime: number;
+    headChunkBytes: number;
+    headChunkLines: number;
+    decompressedBytes: number;
+    decompressedLines: number;
+    compressedBytes: number;
+    totalDuplicates: number;
+  };
+  ingester: {
+    totalReached: number;
+    totalChunksMatched: number;
+    totalBatches: number;
+    totalLinesSent: number;
+    headChunkBytes: number;
+    headChunkLines: number;
+    decompressedBytes: number;
+    decompressedLines: number;
+    compressedBytes: number;
+    totalDuplicates: number;
+  }
+}
+
+interface RawQueryRangeTemplate<
+  Type extends "matrix" | "streams",
+  Result extends LokiMatrix | LokiStream
+> {
+  status: "success";
+  data: {
+    resultType: Type;
+    result: Result[];
+    stats: LokiQueryRangeStats;
+  }
+}
+
+export type RawQueryRangeResponse<T extends "matrix" | "streams"> = T extends "matrix" ?
+  RawQueryRangeTemplate<T, LokiMatrix> :
+  RawQueryRangeTemplate<T, LokiStream>;
+
+export type LokiLabels = Record<string, string>;
+
+export interface LokiStream<T = string> {
+  stream: LokiLabels;
+  values: [unixEpoch: number, log: T][];
+}
+
+export interface LokiMatrix {
+  metric: LokiLabels;
+  values: [unixEpoch: number, metric: string][];
+}
+
+export interface LokiCombined<T = string> {
+  labels: LokiLabels;
+  values: [unixEpoch: number, log: T][];
+}
+
+export interface QueryRangeLogsResponse<T extends LokiPatternType> {
+  logs: LokiLiteralPattern<T>[];
   timerange: TimeRange | null;
 }
 
 export interface QueryRangeStreamResponse<T extends LokiPatternType> {
-  logs: LokiStreamResult<LokiLiteralPattern<T>>[];
+  streams: LokiCombined<LokiLiteralPattern<T>>[];
   timerange: TimeRange | null;
 }
 
 export interface QueryRangeMatrixResponse {
-  logs: LokiMatrix[];
+  metrics: LokiCombined<string>[];
   timerange: TimeRange | null;
 }
 

@@ -82,7 +82,7 @@ describe("GrafanaApi.Loki", () => {
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
       const result = await sdk.Loki.queryRangeMatrix("count_over_time({app='foo'} [5m])");
-      const resultLogs = result.logs[0]!;
+      const resultLogs = result.metrics[0]!;
 
       assert.ok(
         resultLogs.values.every((arr) => typeof arr[0] === "number")
@@ -91,7 +91,7 @@ describe("GrafanaApi.Loki", () => {
         resultLogs.values.map((arr) => arr[1]),
         expectedLogs.slice(0)
       );
-      assert.deepEqual(resultLogs.metric, { foo: "bar" });
+      assert.deepEqual(resultLogs.labels, { foo: "bar" });
     });
   });
 
@@ -132,14 +132,14 @@ describe("GrafanaApi.Loki", () => {
       const result = await sdk.Loki.queryRangeStream("{app='foo'}", {
         pattern: "hello '<name>'"
       });
-      const resultLogs = result.logs[0]!;
+      const resultLogs = result.streams[0]!;
 
-      assert.strictEqual(result.logs.length, 1);
+      assert.strictEqual(result.streams.length, 1);
       assert.deepEqual(
         resultLogs.values[0][1],
         { name: "Thomas" }
       );
-      assert.deepEqual(resultLogs.stream, { foo: "bar" });
+      assert.deepEqual(resultLogs.labels, { foo: "bar" });
     });
 
     it("should return expectedLogs with no modification (using NoopParser)", async() => {
@@ -156,7 +156,7 @@ describe("GrafanaApi.Loki", () => {
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
       const result = await sdk.Loki.queryRangeStream("{app='foo'}");
-      const resultLogs = result.logs[0]!;
+      const resultLogs = result.streams[0]!;
 
       assert.ok(
         resultLogs.values.every((arr) => typeof arr[0] === "number")
@@ -165,7 +165,7 @@ describe("GrafanaApi.Loki", () => {
         resultLogs.values.map((arr) => arr[1]),
         expectedLogs.slice(0)
       );
-      assert.deepEqual(resultLogs.stream, { foo: "bar" });
+      assert.deepEqual(resultLogs.labels, { foo: "bar" });
     });
 
     it("should return empty list of logs (using LogParser)", async() => {
@@ -186,7 +186,7 @@ describe("GrafanaApi.Loki", () => {
       });
 
       assert.deepEqual(
-        result.logs,
+        result.streams,
         expectedLogs
       );
     });
@@ -207,7 +207,7 @@ describe("GrafanaApi.Loki", () => {
       const result = await sdk.Loki.queryRangeStream("{app='foo'}");
 
       assert.deepEqual(
-        result.logs,
+        result.streams,
         expectedLogs
       );
     });
@@ -237,7 +237,7 @@ describe("GrafanaApi.Loki", () => {
 
       const result = await sdk.Loki.queryRange("{app='foo'}");
       assert.deepEqual(
-        result.values,
+        result.logs,
         expectedLogs.slice(0).reverse()
       );
     });
@@ -258,9 +258,9 @@ describe("GrafanaApi.Loki", () => {
       const result = await sdk.Loki.queryRange("{app='foo'}", {
         pattern: "hello '<name>'"
       });
-      assert.strictEqual(result.values.length, 1);
+      assert.strictEqual(result.logs.length, 1);
       assert.deepEqual(
-        result.values[0],
+        result.logs[0],
         { name: "Thomas" }
       );
     });

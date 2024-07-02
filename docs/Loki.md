@@ -61,8 +61,8 @@ interface LokiQueryStreamOptions<T extends LokiPatternType> extends LokiQueryOpt
 
 The response is described by the following interface:
 ```ts
-export interface QueryRangeResponse<T extends LokiPatternType> {
-  values: LokiLiteralPattern<T>[];
+interface QueryRangeLogsResponse<T extends LokiPatternType> {
+  logs: LokiLiteralPattern<T>[];
   timerange: TimeRange | null;
 }
 ```
@@ -92,14 +92,14 @@ for (const { stream, values } of logs) {
 
 The response is described by the following interface:
 ```ts
-interface QueryRangeStreamResponse<T extends LokiPatternType> {
-  logs: LokiStreamResult<LokiLiteralPattern<T>>[];
-  timerange: TimeRange | null;
+interface LokiCombined<T = string> {
+  labels: LokiLabels;
+  values: [unixEpoch: number, log: T][];
 }
 
-interface LokiStreamResult<T> {
-  stream: Record<string, string>;
-  values: [unixEpoch: number, value: T][];
+interface QueryRangeStreamResponse<T extends LokiPatternType> {
+  streams: LokiCombined<LokiLiteralPattern<T>>[];
+  timerange: TimeRange | null;
 }
 ```
 
@@ -118,14 +118,14 @@ count_over_time({ label="value" }[5m])
 The response is described by the following interface:
 
 ```ts
-interface QueryRangeMatrixResponse {
-  logs: LokiMatrix[];
-  timerange: TimeRange | null;
+interface LokiCombined<T = string> {
+  labels: LokiLabels;
+  values: [unixEpoch: number, log: T][];
 }
 
-interface LokiMatrix {
-  metric: Record<string, string>;
-  values: [unixEpoch: number, value: string][];
+interface QueryRangeMatrixResponse {
+  metrics: LokiCombined<string>[];
+  timerange: TimeRange | null;
 }
 ```
 
@@ -223,7 +223,8 @@ async series<T = Record<string, string>>(
 ```
 
 ## Pattern usage
-**queryRange** and **queryRangeStream** API allow the usage of pattern.
+
+**queryRange** and **queryRangeStream** APIs allow the usage of pattern.
 
 ```ts
 import { GrafanaApi } from "@myunisoft/loki";
