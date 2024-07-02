@@ -117,6 +117,10 @@ export class Loki {
     logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeMatrixResponse<T>> {
+    if (LogQL.type(logQL) === "query") {
+      throw new Error("Log queries must use `queryRangeStream` method");
+    }
+
     const { pattern = new NoopPattern() } = options;
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?
       pattern : new Pattern(pattern);
@@ -140,6 +144,10 @@ export class Loki {
     logQL: LogQL | string,
     options: LokiQueryOptions<T> = {}
   ): Promise<QueryRangeStreamResponse<T>> {
+    if (LogQL.type(logQL) === "metric") {
+      throw new Error("Metric queries must use `queryRangeMatrix` method");
+    }
+
     const { pattern = new NoopPattern() } = options;
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?
       pattern : new Pattern(pattern);

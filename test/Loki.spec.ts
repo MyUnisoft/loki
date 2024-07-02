@@ -20,6 +20,16 @@ const kMockAgent = new MockAgent();
 kMockAgent.disableNetConnect();
 
 describe("GrafanaApi.Loki", () => {
+  const agentPoolInterceptor = kMockAgent.get(kDummyURL);
+
+  before(() => {
+    setGlobalDispatcher(kMockAgent);
+  });
+
+  after(() => {
+    setGlobalDispatcher(kDefaultDispatcher);
+  });
+
   describe("constructor", () => {
     beforeEach(() => {
       delete process.env.GRAFANA_API_TOKEN;
@@ -37,66 +47,28 @@ describe("GrafanaApi.Loki", () => {
     });
   });
 
-  describe("queryRange", () => {
-    const agentPoolInterceptor = kMockAgent.get(kDummyURL);
-
+  describe("queryRangeMatrix", () => {
     before(() => {
       process.env.GRAFANA_API_TOKEN = "";
-      setGlobalDispatcher(kMockAgent);
     });
 
     after(() => {
       delete process.env.GRAFANA_API_TOKEN;
-      setGlobalDispatcher(kDefaultDispatcher);
     });
 
-    it("should return expectedLogs with no modification (using NoopParser)", async() => {
-      const expectedLogs = ["hello world", "foobar"];
-
-      agentPoolInterceptor
-        .intercept({
-          path: (path) => path.includes("loki/api/v1/query_range")
-        })
-        .reply(200, mockStreamResponse(expectedLogs), {
-          headers: { "Content-Type": "application/json" }
-        });
-
+    it("should throw with a log query", async() => {
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.Loki.queryRange("{app='foo'}");
-      assert.deepEqual(
-        result.values,
-        expectedLogs.slice(0).reverse()
+      await assert.rejects(
+        () => sdk.Loki.queryRangeMatrix("{app='foo'}"),
+        {
+          name: "Error",
+          message: "Log queries must use `queryRangeStream` method"
+        }
       );
     });
 
-    it("should return expectedLogs with no modification (using NoopParser, queryRangeStream)", async() => {
-      const expectedLogs = ["hello world", "foobar"];
-
-      agentPoolInterceptor
-        .intercept({
-          path: (path) => path.includes("loki/api/v1/query_range")
-        })
-        .reply(200, mockStreamResponse(expectedLogs), {
-          headers: { "Content-Type": "application/json" }
-        });
-
-      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
-
-      const result = await sdk.Loki.queryRangeStream("{app='foo'}");
-      const resultLogs = result.logs[0]!;
-
-      assert.ok(
-        resultLogs.values.every((arr) => typeof arr[0] === "number")
-      );
-      assert.deepEqual(
-        resultLogs.values.map((arr) => arr[1]),
-        expectedLogs.slice(0)
-      );
-      assert.deepEqual(resultLogs.stream, { foo: "bar" });
-    });
-
-    it("should return expectedLogs with no modification (using NoopParser, queryRangeMatrix)", async() => {
+    it("should return expectedLogs with no modification (NoopParser)", async() => {
       const expectedLogs = ["hello world", "foobar"];
 
       agentPoolInterceptor
@@ -109,7 +81,7 @@ describe("GrafanaApi.Loki", () => {
 
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.Loki.queryRangeMatrix("{app='foo'}");
+      const result = await sdk.Loki.queryRangeMatrix("count_over_time({app='foo'} [5m])");
       const resultLogs = result.logs[0]!;
 
       assert.ok(
@@ -121,52 +93,30 @@ describe("GrafanaApi.Loki", () => {
       );
       assert.deepEqual(resultLogs.metric, { foo: "bar" });
     });
+  });
 
-    it("should return empty list of logs (using NoopParser, queryRangeStream)", async() => {
-      const expectedLogs = [];
+  describe("queryRangeStream", () => {
+    before(() => {
+      process.env.GRAFANA_API_TOKEN = "";
+    });
 
-      agentPoolInterceptor
-        .intercept({
-          path: (path) => path.includes("loki/api/v1/query_range")
-        })
-        .reply(200, mockStreamResponse(expectedLogs), {
-          headers: { "Content-Type": "application/json" }
-        });
+    after(() => {
+      delete process.env.GRAFANA_API_TOKEN;
+    });
 
+    it("should throw with a metric query", async() => {
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
-      const result = await sdk.Loki.queryRangeStream("{app='foo'}");
-
-      assert.deepEqual(
-        result.logs,
-        expectedLogs
+      await assert.rejects(
+        () => sdk.Loki.queryRangeStream("count_over_time({app='foo'} [5m])"),
+        {
+          name: "Error",
+          message: "Metric queries must use `queryRangeMatrix` method"
+        }
       );
     });
 
     it("should use the provided parser to transform logs", async() => {
-      const expectedLogs = ["hello 'Thomas'"];
-
-      agentPoolInterceptor
-        .intercept({
-          path: (path) => path.includes("loki/api/v1/query_range")
-        })
-        .reply(200, mockStreamResponse(expectedLogs), {
-          headers: { "Content-Type": "application/json" }
-        });
-
-      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
-
-      const result = await sdk.Loki.queryRange("{app='foo'}", {
-        pattern: "hello '<name>'"
-      });
-      assert.strictEqual(result.values.length, 1);
-      assert.deepEqual(
-        result.values[0],
-        { name: "Thomas" }
-      );
-    });
-
-    it("should use the provided parser to transform logs (queryRangeStream)", async() => {
       const expectedLogs = ["hello 'Thomas'"];
 
       agentPoolInterceptor
@@ -192,7 +142,33 @@ describe("GrafanaApi.Loki", () => {
       assert.deepEqual(resultLogs.stream, { foo: "bar" });
     });
 
-    it("should return empty list of logs (using LogParser, queryRangeStream)", async() => {
+    it("should return expectedLogs with no modification (using NoopParser)", async() => {
+      const expectedLogs = ["hello world", "foobar"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.Loki.queryRangeStream("{app='foo'}");
+      const resultLogs = result.logs[0]!;
+
+      assert.ok(
+        resultLogs.values.every((arr) => typeof arr[0] === "number")
+      );
+      assert.deepEqual(
+        resultLogs.values.map((arr) => arr[1]),
+        expectedLogs.slice(0)
+      );
+      assert.deepEqual(resultLogs.stream, { foo: "bar" });
+    });
+
+    it("should return empty list of logs (using LogParser)", async() => {
       const expectedLogs = [];
 
       agentPoolInterceptor
@@ -212,6 +188,80 @@ describe("GrafanaApi.Loki", () => {
       assert.deepEqual(
         result.logs,
         expectedLogs
+      );
+    });
+
+    it("should return empty list of logs (using NoopParser)", async() => {
+      const expectedLogs = [];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.Loki.queryRangeStream("{app='foo'}");
+
+      assert.deepEqual(
+        result.logs,
+        expectedLogs
+      );
+    });
+  });
+
+  describe("queryRange", () => {
+    before(() => {
+      process.env.GRAFANA_API_TOKEN = "";
+    });
+
+    after(() => {
+      delete process.env.GRAFANA_API_TOKEN;
+    });
+
+    it("should return expectedLogs with no modification (using NoopParser)", async() => {
+      const expectedLogs = ["hello world", "foobar"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.Loki.queryRange("{app='foo'}");
+      assert.deepEqual(
+        result.values,
+        expectedLogs.slice(0).reverse()
+      );
+    });
+
+    it("should use the provided parser to transform logs", async() => {
+      const expectedLogs = ["hello 'Thomas'"];
+
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/query_range")
+        })
+        .reply(200, mockStreamResponse(expectedLogs), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
+
+      const result = await sdk.Loki.queryRange("{app='foo'}", {
+        pattern: "hello '<name>'"
+      });
+      assert.strictEqual(result.values.length, 1);
+      assert.deepEqual(
+        result.values[0],
+        { name: "Thomas" }
       );
     });
   });
