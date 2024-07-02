@@ -32,7 +32,7 @@ const kAutoURLGrafanaTransformer = {
   end: kDurationTransformer
 };
 
-interface LokiQueryBaseOptions {
+export interface LokiQueryOptions {
   /**
    * @default 100
    */
@@ -42,7 +42,7 @@ interface LokiQueryBaseOptions {
   since?: string;
 }
 
-export interface LokiQueryOptions<T extends LokiPatternType> extends LokiQueryBaseOptions {
+export interface LokiQueryStreamOptions<T extends LokiPatternType> extends LokiQueryOptions {
   pattern?: T;
 }
 
@@ -94,7 +94,7 @@ export class Loki {
 
   #fetchQueryRange<T>(
     logQL: LogQL | string,
-    options: LokiQueryBaseOptions = {}
+    options: LokiQueryOptions = {}
   ): Promise<httpie.RequestResponse<RawQueryRangeResponse<T>>> {
     const { limit = 100 } = options;
 
@@ -113,36 +113,28 @@ export class Loki {
     );
   }
 
-  async queryRangeMatrix<T extends LokiPatternType = string>(
+  async queryRangeMatrix(
     logQL: LogQL | string,
-    options: LokiQueryOptions<T> = {}
-  ): Promise<QueryRangeMatrixResponse<T>> {
+    options: LokiQueryOptions = {}
+  ): Promise<QueryRangeMatrixResponse> {
     if (LogQL.type(logQL) === "query") {
       throw new Error("Log queries must use `queryRangeStream` method");
     }
 
-    const { pattern = new NoopPattern() } = options;
-    const parser: PatternShape<any> = pattern instanceof NoopPattern ?
-      pattern : new Pattern(pattern);
-
-    const { data } = await this.#fetchQueryRange<LokiMatrix>(logQL, options);
+    const { data } = await this.#fetchQueryRange<LokiMatrix>(
+      logQL,
+      options
+    );
 
     return {
-      logs: data.data.result.map((result) => {
-        return {
-          metric: result.metric,
-          values: result.values
-            .map(([unixEpoch, log]) => [unixEpoch, ...parser.executeOnLogs([log])])
-            .filter((log) => log.length > 1) as any[]
-        };
-      }),
+      logs: data.data.result,
       timerange: utils.streamOrMatrixTimeRange(data.data.result)
     };
   }
 
   async queryRangeStream<T extends LokiPatternType = string>(
     logQL: LogQL | string,
-    options: LokiQueryOptions<T> = {}
+    options: LokiQueryStreamOptions<T> = {}
   ): Promise<QueryRangeStreamResponse<T>> {
     if (LogQL.type(logQL) === "metric") {
       throw new Error("Metric queries must use `queryRangeMatrix` method");
@@ -152,7 +144,10 @@ export class Loki {
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?
       pattern : new Pattern(pattern);
 
-    const { data } = await this.#fetchQueryRange<LokiStream>(logQL, options);
+    const { data } = await this.#fetchQueryRange<LokiStream>(
+      logQL,
+      options
+    );
 
     return {
       logs: data.data.result.map((result) => {
@@ -169,7 +164,7 @@ export class Loki {
 
   async queryRange<T extends LokiPatternType = string>(
     logQL: LogQL | string,
-    options: LokiQueryOptions<T> = {}
+    options: LokiQueryStreamOptions<T> = {}
   ): Promise<QueryRangeResponse<T>> {
     const { pattern = new NoopPattern() } = options;
     const parser: PatternShape<any> = pattern instanceof NoopPattern ?

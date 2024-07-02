@@ -17,11 +17,6 @@ export interface LokiMatrix {
   values: [unixEpoch: number, value: string][];
 }
 
-export interface LokiMatrixResult<T> {
-  metric: Record<string, string>;
-  values: [unixEpoch: number, value: T][];
-}
-
 export interface LokiStreamResult<T> {
   stream: Record<string, string>;
   values: [unixEpoch: number, value: T][];
@@ -84,8 +79,8 @@ export interface QueryRangeStreamResponse<T extends LokiPatternType> {
   timerange: TimeRange | null;
 }
 
-export interface QueryRangeMatrixResponse<T extends LokiPatternType> {
-  logs: LokiMatrixResult<LokiLiteralPattern<T>>[];
+export interface QueryRangeMatrixResponse {
+  logs: LokiMatrix[];
   timerange: TimeRange | null;
 }
 

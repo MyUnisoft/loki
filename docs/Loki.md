@@ -22,7 +22,7 @@ export type TimeRange = [first: number, last: number];
 
 ## API
 
-### queryRange< T = string >(logQL: LogQL | string, options?: LokiQueryOptions< T >): Promise< QueryRangeResponse< T > >
+### queryRange< T = string >(logQL: LogQL | string, options?: LokiQueryStreamOptions< T >): Promise< QueryRangeResponse< T > >
 
 The `queryRange` method returns raw logs (without timestamp or metric/stream labels).
 
@@ -40,7 +40,7 @@ console.log(logs);
 The queryRange options are described by the following TypeScript interface:
 
 ```ts
-export interface LokiQueryOptions<T> {
+interface LokiQueryOptions {
   /**
    * @default 100
    */
@@ -48,7 +48,10 @@ export interface LokiQueryOptions<T> {
   start?: number | string;
   end?: number | string;
   since?: string;
-  pattern?: T | Array<T> | ReadonlyArray<T>;
+}
+
+interface LokiQueryStreamOptions<T extends LokiPatternType> extends LokiQueryOptions {
+  pattern?: T;
 }
 ```
 
@@ -69,7 +72,7 @@ export interface QueryRangeResponse<T extends LokiPatternType> {
 > [!CAUTION]
 > When you use an incorrect pattern, any logs that are not correctly parsed will be removed from the result.
 
-### queryRangeStream< T = string >(logQL: LogQL | string, options?: LokiQueryOptions< T >): Promise< QueryRangeStreamResponse< T > >
+### queryRangeStream< T = string >(logQL: LogQL | string, options?: LokiQueryStreamOptions< T >): Promise< QueryRangeStreamResponse< T > >
 
 Same as `queryRange` but returns the labels key-value pairs stream
 
@@ -85,6 +88,8 @@ for (const { stream, values } of logs) {
 }
 ```
 
+#### response
+
 The response is described by the following interface:
 ```ts
 interface QueryRangeStreamResponse<T extends LokiPatternType> {
@@ -98,28 +103,29 @@ interface LokiStreamResult<T> {
 }
 ```
 
-### queryRangeMatrix< T = string >(logQL: LogQL | string, options?: LokiQueryOptions< T >): Promise< QueryRangeMatrixResponse< T > >
+### queryRangeMatrix(logQL: LogQL | string, options?: LokiQueryBaseOptions): Promise< QueryRangeMatrixResponse >
 
-Same as `queryRange` but returns the labels key-value pairs metric
+Similar to `queryRange`, but it returns the labels' key-value pairs as metrics. Note that the matrix does not include patterns and values are returned as strings.
 
-Matrix are returned for [Metric queries](https://grafana.com/docs/loki/latest/query/metric_queries/)
+This method can only be used with [metric queries](https://grafana.com/docs/loki/latest/query/metric_queries/). Here is an example:
+
 ```
 count_over_time({ label="value" }[5m])
 ```
 
----
+#### response
 
 The response is described by the following interface:
 
 ```ts
-interface QueryRangeMatrixResponse<T extends LokiPatternType> {
-  logs: LokiMatrixResult<LokiLiteralPattern<T>>[];
+interface QueryRangeMatrixResponse {
+  logs: LokiMatrix[];
   timerange: TimeRange | null;
 }
 
-interface LokiMatrixResult<T> {
+interface LokiMatrix {
   metric: Record<string, string>;
-  values: [unixEpoch: number, value: T][];
+  values: [unixEpoch: number, value: string][];
 }
 ```
 
