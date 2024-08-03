@@ -37,3 +37,17 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
+  automerge:
+    if: >
+      github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge Dependabot PR
+        uses: fastify/github-action-merge-dependabot@9e7bfb249c69139d7bdcd8d984f9665edd49020b # v3.10.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
