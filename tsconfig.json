@@ -1,17 +1,7 @@
 {
+  "extends": "@openally/config.typescript/cjs",
   "compilerOptions": {
-    "declaration": true,
-    "strictNullChecks": true,
-    "target": "ES2022",
     "outDir": "dist",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "resolveJsonModule": false,
-    "skipDefaultLibCheck": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "sourceMap": true,
     "rootDir": "./src",
     "types": ["node"]
   },

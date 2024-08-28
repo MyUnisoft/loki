@@ -54,7 +54,7 @@ export class GrafanaApi {
   }
 }
 
-export {
+export type {
   Datasource,
   LokiLabelValuesOptions,
   LokiLabelsOptions,

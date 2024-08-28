@@ -122,7 +122,7 @@ export class Datasources {
       this.remoteApiURL
     );
 
-    const { data } = await httpie.get<{ id: number }>(
+    const { data } = await httpie.get<{ id: number; }>(
       uri,
       this.credential.httpOptions
     );

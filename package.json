@@ -26,6 +26,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "lint": "eslint src test",
     "prepublishOnly": "npm run build",
     "test": "glob -c \"tsx --test\" \"./test/**/*.spec.ts\"",
     "coverage": "c8 -r html npm test"
@@ -38,7 +39,9 @@
   "author": "GENTILHOMME Thomas <gentilhomme.thomas@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "@nodesecure/eslint-config": "^1.9.0",
+    "@openally/config.eslint": "^1.0.0",
+    "@openally/config.typescript": "^1.0.3",
+    "@types/ms": "^0.7.34",
     "@types/node": "^22.0.0",
     "c8": "^10.1.2",
     "glob": "^11.0.0",
