@@ -25,7 +25,7 @@ export function escapeStringRegExp(str: string): string {
 
 export function transformStreamOrMatrixValue(
   value: [unixEpoch: number, log: string]
-): { date: Dayjs; log: string } {
+): { date: Dayjs; log: string; } {
   const [unixEpoch, log] = value;
 
   return {
@@ -38,7 +38,7 @@ export type TimeRange = [first: number, last: number];
 
 export function inlineLogs(
   result: RawQueryRangeResponse<"streams">
-): null | { values: string[], timerange: TimeRange } {
+): null | { values: string[]; timerange: TimeRange; } {
   if (result.status !== "success") {
     return null;
   }

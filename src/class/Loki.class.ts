@@ -24,7 +24,9 @@ import {
 import { ApiCredential } from "./ApiCredential.class.js";
 
 // CONSTANTS
-const kDurationTransformer = (value: string | number) => utils.durationToUnixTimestamp(value);
+function kDurationTransformer(value: string | number) {
+  return utils.durationToUnixTimestamp(value);
+}
 const kAutoURLGrafanaTransformer = {
   start: kDurationTransformer,
   end: kDurationTransformer
@@ -227,7 +229,7 @@ export class Loki {
     // Note: Grafana API seem to want the match[] syntax
     const { data: listSeries } = await httpie.get<LokiStandardBaseResponse<T[]>>(uri, {
       querystring: new URLSearchParams(
-        match.map((selector) => ["match", new StreamSelector(selector).toString()])
+        match.map((selector) => ["match", new StreamSelector(selector).toString()] as [string, string])
       )
     });
 

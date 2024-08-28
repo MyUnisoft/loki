@@ -12,7 +12,7 @@ export type LokiStandardBaseResponse<S> = {
 } | {
   status: "success";
   data: S;
-}
+};
 
 export interface LokiQueryRangeStats {
   summary: {
@@ -44,7 +44,7 @@ export interface LokiQueryRangeStats {
     decompressedLines: number;
     compressedBytes: number;
     totalDuplicates: number;
-  }
+  };
 }
 
 interface RawQueryRangeTemplate<
@@ -56,13 +56,13 @@ interface RawQueryRangeTemplate<
     resultType: Type;
     result: Result;
     stats: LokiQueryRangeStats;
-  }
+  };
 }
 
 export type RawQueryRangeResponse<T extends "matrix" | "streams" | "vector"> =
   T extends "matrix" ? RawQueryRangeTemplate<T, LokiMatrix[]> :
-  T extends "streams" ? RawQueryRangeTemplate<T, LokiStream[]> :
-  RawQueryRangeTemplate<T, LokiVector>;
+    T extends "streams" ? RawQueryRangeTemplate<T, LokiStream[]> :
+      RawQueryRangeTemplate<T, LokiVector>;
 
 export type LokiLabels = Record<string, string>;
 
@@ -101,4 +101,4 @@ export interface QueryRangeMatrixResponse {
   timerange: TimeRange | null;
 }
 
-export { TimeRange };
+export type { TimeRange };
