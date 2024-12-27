@@ -8,6 +8,8 @@ import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from "@myunisoft/
 // Import Internal Dependencies
 import {
   GrafanaApi,
+  LogEntry,
+  LokiIngestLogs,
   LokiStandardBaseResponse
 } from "../src/index.js";
 import { mockMatrixResponse, mockStreamResponse } from "./utils/logs.factory.js";
@@ -381,6 +383,39 @@ describe("GrafanaApi.Loki", () => {
       const result = await sdk.Loki.series(`{env="production"}`);
       assert.ok(Array.isArray(result));
       assert.strictEqual(result.length, 0);
+    });
+  });
+
+  describe("push", () => {
+    const agentPoolInterceptor = kMockAgent.get(kDummyURL);
+
+    before(() => {
+      process.env.GRAFANA_API_TOKEN = "";
+      setGlobalDispatcher(kMockAgent);
+    });
+
+    after(() => {
+      delete process.env.GRAFANA_API_TOKEN;
+      setGlobalDispatcher(kDefaultDispatcher);
+    });
+
+    it("should call POST /loki/api/v1/push with the provided logs", async() => {
+      const dummyLogs: LokiIngestLogs[] = [
+        {
+          stream: { app: "foo" },
+          values: [["173532887432100000", "hello world"]]
+        }
+      ];
+
+      const agentPoolInterceptor = kMockAgent.get(kDummyURL);
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/push"),
+          method: "POST"
+        }).reply(204);
+
+      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
+      await assert.doesNotReject(async() => await sdk.Loki.push(dummyLogs));
     });
   });
 });
