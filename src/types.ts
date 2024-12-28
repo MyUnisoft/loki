@@ -102,3 +102,11 @@ export interface QueryRangeMatrixResponse {
 }
 
 export type { TimeRange };
+
+export type LogEntry = [unixEpoch: string, log: string];
+export type LogEntryWithMetadata = [unixEpoch: string, log: string, metadata: Record<string, string>];
+
+export interface LokiIngestLogs {
+  stream: Record<string, string | number | boolean>;
+  values: (LogEntry | LogEntryWithMetadata)[];
+}

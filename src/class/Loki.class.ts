@@ -19,7 +19,8 @@ import {
   RawQueryRangeResponse,
   QueryRangeLogsResponse,
   QueryRangeStreamResponse,
-  QueryRangeMatrixResponse
+  QueryRangeMatrixResponse,
+  LokiIngestLogs
 } from "../types.js";
 import { ApiCredential } from "./ApiCredential.class.js";
 
@@ -234,5 +235,18 @@ export class Loki {
     });
 
     return listSeries.status === "success" ? listSeries.data : [];
+  }
+
+  async push(logs: LokiIngestLogs[]): Promise<void> {
+    const uri = new URL("loki/api/v1/push", this.remoteApiURL);
+    const { headers } = this.credential.httpOptions;
+
+    await httpie.post(uri, {
+      body: { streams: logs },
+      headers: {
+        ...headers,
+        "Content-Type": "application/json"
+      }
+    });
   }
 }

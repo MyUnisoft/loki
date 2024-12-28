@@ -222,6 +222,34 @@ async series<T = Record<string, string>>(
 ): Promise<T[]>
 ```
 
+### push(logs: LokiIngestLogs): Promise< void >
+Send log entries to Loki.
+
+```ts
+const logs: LokiIngestLogs[] = [
+  {
+    stream: { app: "foo" },
+    values: [["173532887432100000", "hello world"]]
+  }
+];
+await api.Loki.push(logs);
+```
+
+The `LokiIngestLogs` type is defined as follows:
+
+```ts
+export type LogEntry = [unixEpoch: string, log: string];
+export type LogEntryWithMetadata = [unixEpoch: string, log: string, metadata: Record<string, string>];
+
+export interface LokiIngestLogs {
+  stream: Record<string, string | number | boolean>;
+  values: (LogEntry | LogEntryWithMetadata)[];
+}
+```
+
+> [!IMPORTANT]
+> The unixEpoch must be in **nanoseconds**
+
 ## Pattern usage
 
 **queryRange** and **queryRangeStream** APIs allow the usage of pattern.
