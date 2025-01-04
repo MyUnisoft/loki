@@ -32,32 +32,7 @@ describe("GrafanaApi.Loki", () => {
     setGlobalDispatcher(kDefaultDispatcher);
   });
 
-  describe("constructor", () => {
-    beforeEach(() => {
-      delete process.env.GRAFANA_API_TOKEN;
-    });
-
-    it("should throw an Error if no api token is provided", () => {
-      const expectedError = {
-        name: "Error",
-        message: "API token must be provided to use the Grafana API"
-      };
-
-      assert.throws(() => {
-        new GrafanaApi({ remoteApiURL: kDummyURL });
-      }, expectedError);
-    });
-  });
-
   describe("queryRangeMatrix", () => {
-    before(() => {
-      process.env.GRAFANA_API_TOKEN = "";
-    });
-
-    after(() => {
-      delete process.env.GRAFANA_API_TOKEN;
-    });
-
     it("should throw with a log query", async() => {
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
@@ -98,14 +73,6 @@ describe("GrafanaApi.Loki", () => {
   });
 
   describe("queryRangeStream", () => {
-    before(() => {
-      process.env.GRAFANA_API_TOKEN = "";
-    });
-
-    after(() => {
-      delete process.env.GRAFANA_API_TOKEN;
-    });
-
     it("should throw with a metric query", async() => {
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
 
@@ -216,14 +183,6 @@ describe("GrafanaApi.Loki", () => {
   });
 
   describe("queryRange", () => {
-    before(() => {
-      process.env.GRAFANA_API_TOKEN = "";
-    });
-
-    after(() => {
-      delete process.env.GRAFANA_API_TOKEN;
-    });
-
     it("should return expectedLogs with no modification (using NoopParser)", async() => {
       const expectedLogs = ["hello world", "foobar"];
 
@@ -272,12 +231,10 @@ describe("GrafanaApi.Loki", () => {
     const agentPoolInterceptor = kMockAgent.get(kDummyURL);
 
     before(() => {
-      process.env.GRAFANA_API_TOKEN = "";
       setGlobalDispatcher(kMockAgent);
     });
 
     after(() => {
-      delete process.env.GRAFANA_API_TOKEN;
       setGlobalDispatcher(kDefaultDispatcher);
     });
 
@@ -325,12 +282,10 @@ describe("GrafanaApi.Loki", () => {
     const agentPoolInterceptor = kMockAgent.get(kDummyURL);
 
     before(() => {
-      process.env.GRAFANA_API_TOKEN = "";
       setGlobalDispatcher(kMockAgent);
     });
 
     after(() => {
-      delete process.env.GRAFANA_API_TOKEN;
       setGlobalDispatcher(kDefaultDispatcher);
     });
 
@@ -387,15 +342,11 @@ describe("GrafanaApi.Loki", () => {
   });
 
   describe("push", () => {
-    const agentPoolInterceptor = kMockAgent.get(kDummyURL);
-
     before(() => {
-      process.env.GRAFANA_API_TOKEN = "";
       setGlobalDispatcher(kMockAgent);
     });
 
     after(() => {
-      delete process.env.GRAFANA_API_TOKEN;
       setGlobalDispatcher(kDefaultDispatcher);
     });
 

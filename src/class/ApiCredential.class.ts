@@ -1,24 +1,53 @@
 
+export type ApiCredentialAuthorizationOptions = {
+  type: "bearer";
+  token: string;
+} | {
+  type: "classic";
+  username: string;
+  password: string;
+} | {
+  type: "custom";
+  authorization: string;
+};
+
 export class ApiCredential {
-  private token: string;
+  private authorization: string | null;
   private userAgent: string | null;
 
+  static buildAuthorizationHeader(
+    authorizationOptions: ApiCredentialAuthorizationOptions
+  ): string {
+    switch (authorizationOptions.type) {
+      case "bearer":
+        return `Bearer ${authorizationOptions.token}`;
+      case "classic": {
+        const { username, password } = authorizationOptions;
+
+        return Buffer
+          .from(`${username}:${password}`)
+          .toString("base64");
+      }
+      case "custom":
+      default:
+        return authorizationOptions.authorization;
+    }
+  }
+
   constructor(
-    token?: string,
+    authorizationOptions?: ApiCredentialAuthorizationOptions,
     userAgent?: string
   ) {
-    this.token = token ?? process.env.GRAFANA_API_TOKEN!;
+    this.authorization = authorizationOptions ?
+      ApiCredential.buildAuthorizationHeader(authorizationOptions) :
+      null;
     this.userAgent = userAgent ?? null;
-
-    if (typeof this.token === "undefined") {
-      throw new Error("API token must be provided to use the Grafana API");
-    }
   }
 
   get httpOptions() {
     return {
       headers: {
-        authorization: `Bearer ${this.token}`,
+        ...(this.authorization === null ? {} : { authorization: this.authorization }),
         ...(this.userAgent === null ? {} : { "User-Agent": this.userAgent })
       }
     };

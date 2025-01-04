@@ -1,5 +1,8 @@
 // Import Internal Dependencies
-import { ApiCredential } from "./ApiCredential.class.js";
+import {
+  ApiCredential,
+  type ApiCredentialAuthorizationOptions
+} from "./ApiCredential.class.js";
 import {
   Datasources,
   Datasource
@@ -13,9 +16,9 @@ import {
 
 export interface GrafanaApiOptions {
   /**
-   * Grafana API Token
+   * If omitted then no authorization is dispatched to requests
    */
-  apiToken?: string;
+  authentication?: ApiCredentialAuthorizationOptions;
   /**
    * User-agent HTTP header to forward to Grafana/Loki API
    * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agents
@@ -35,9 +38,9 @@ export class GrafanaApi {
   public Loki: Loki;
 
   constructor(options: GrafanaApiOptions) {
-    const { apiToken, userAgent, remoteApiURL } = options;
+    const { authentication, userAgent, remoteApiURL } = options;
 
-    this.credential = new ApiCredential(apiToken, userAgent);
+    this.credential = new ApiCredential(authentication, userAgent);
     this.remoteApiURL = typeof remoteApiURL === "string" ?
       new URL(remoteApiURL) :
       remoteApiURL;
@@ -58,5 +61,6 @@ export type {
   Datasource,
   LokiLabelValuesOptions,
   LokiLabelsOptions,
-  LokiQueryOptions
+  LokiQueryOptions,
+  ApiCredentialAuthorizationOptions
 };

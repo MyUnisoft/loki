@@ -7,46 +7,81 @@ import crypto from "node:crypto";
 import { ApiCredential } from "../src/class/ApiCredential.class.js";
 
 describe("ApiCredential", () => {
-  describe("constructor", () => {
-    beforeEach(() => {
-      delete process.env.GRAFANA_API_TOKEN;
-    });
-
-    it("should throw an Error if no api token is provided", () => {
-      const expectedError = {
-        name: "Error",
-        message: "API token must be provided to use the Grafana API"
+  describe("httpOptions getter", () => {
+    it("should return the bearer token provided in the constructor", () => {
+      const bearerAuth = {
+        type: "bearer" as const,
+        token: crypto.randomBytes(4).toString("hex")
       };
 
-      assert.throws(() => {
-        new ApiCredential();
-      }, expectedError);
+      const sdk = new ApiCredential(bearerAuth);
+      assert.deepEqual(
+        sdk.httpOptions,
+        {
+          headers: {
+            authorization: ApiCredential.buildAuthorizationHeader(bearerAuth)
+          }
+        }
+      );
     });
-  });
 
-  describe("httpOptions getter", () => {
-    it("should return apiToken provided in the constructor", () => {
-      const apiToken = crypto.randomBytes(4).toString("hex");
+    it("should return classic authentication (username and password) provided in the constructor as base64", () => {
+      const classicAuth = {
+        type: "classic" as const,
+        username: "foo",
+        password: "bar"
+      };
 
-      const sdk = new ApiCredential(apiToken);
+      const sdk = new ApiCredential(classicAuth);
+      assert.deepEqual(
+        sdk.httpOptions,
+        {
+          headers: {
+            authorization: ApiCredential.buildAuthorizationHeader(classicAuth)
+          }
+        }
+      );
+    });
+
+    it("should return custom authentication provided in the constructor", () => {
+      const authorization = "hello world";
+      const classicAuth = {
+        type: "custom" as const,
+        authorization
+      };
+
+      const sdk = new ApiCredential(classicAuth);
+      assert.deepEqual(
+        sdk.httpOptions,
+        {
+          headers: {
+            authorization
+          }
+        }
+      );
+    });
+
+    it("should inject User-Agent header", () => {
+      const token = crypto.randomBytes(4).toString("hex");
+      const userAgent = "my-super-agent";
+
+      const sdk = new ApiCredential({
+        type: "bearer",
+        token
+      }, userAgent);
+
       assert.deepEqual(sdk.httpOptions, {
         headers: {
-          authorization: `Bearer ${apiToken}`
+          authorization: `Bearer ${token}`,
+          "User-Agent": userAgent
         }
       });
     });
 
-    it("should inject User-Agent header", () => {
-      const apiToken = crypto.randomBytes(4).toString("hex");
-      const userAgent = "my-super-agent";
-
-      const sdk = new ApiCredential(apiToken, userAgent);
-
+    it("should return empty headers if no authentication methods is provided", () => {
+      const sdk = new ApiCredential();
       assert.deepEqual(sdk.httpOptions, {
-        headers: {
-          authorization: `Bearer ${apiToken}`,
-          "User-Agent": userAgent
-        }
+        headers: {}
       });
     });
   });

@@ -36,12 +36,10 @@ describe("GrafanaApi.DataSources", () => {
   const agentPoolInterceptor = kMockAgent.get(kDummyURL);
 
   before(() => {
-    process.env.GRAFANA_API_TOKEN = "";
     setGlobalDispatcher(kMockAgent);
   });
 
   after(() => {
-    delete process.env.GRAFANA_API_TOKEN;
     setGlobalDispatcher(kDefaultDispatcher);
   });
 

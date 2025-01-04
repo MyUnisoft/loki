@@ -46,8 +46,10 @@ import { GrafanaApi } from "@myunisoft/loki";
 import { LogQL, StreamSelector } from "@sigyn/logql";
 
 const api = new GrafanaApi({
-  // Note: if not provided, it will load process.env.GRAFANA_API_TOKEN
-  apiToken: "...",
+  authentication: {
+    type: "bearer",
+    token: process.env.GRAFANA_API_TOKEN!
+  },
   remoteApiURL: "https://name.loki.com"
 });
 
@@ -83,11 +85,11 @@ for (const { verb, endpoint } of logs) {
 ### GrafanaAPI
 
 ```ts
-export interface GrafanaApiOptions {
+interface GrafanaApiOptions {
   /**
-   * Grafana API Token
+   * If omitted then no authorization is dispatched to requests
    */
-  apiToken?: string;
+  authentication?: ApiCredentialAuthorizationOptions;
   /**
    * User-agent HTTP header to forward to Grafana/Loki API
    * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agents
@@ -98,6 +100,18 @@ export interface GrafanaApiOptions {
    */
   remoteApiURL: string | URL;
 }
+
+type ApiCredentialAuthorizationOptions = {
+  type: "bearer";
+  token: string;
+} | {
+  type: "classic";
+  username: string;
+  password: string;
+} | {
+  type: "custom";
+  authorization: string;
+};
 ```
 
 ### Sub-class
