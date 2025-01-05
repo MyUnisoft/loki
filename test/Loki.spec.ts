@@ -366,7 +366,30 @@ describe("GrafanaApi.Loki", () => {
         }).reply(204);
 
       const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
-      await assert.doesNotReject(async() => await sdk.Loki.push(dummyLogs));
+      await assert.doesNotReject(
+        async() => await sdk.Loki.push(dummyLogs)
+      );
+    });
+
+    it("should call POST /loki/api/v1/push with the provided logs (but with an Iterable)", async() => {
+      function* gen(): IterableIterator<LokiIngestLogs> {
+        yield {
+          stream: { app: "foo" },
+          values: [["173532887432100000", "hello world"]]
+        };
+      }
+
+      const agentPoolInterceptor = kMockAgent.get(kDummyURL);
+      agentPoolInterceptor
+        .intercept({
+          path: (path) => path.includes("loki/api/v1/push"),
+          method: "POST"
+        }).reply(204);
+
+      const sdk = new GrafanaApi({ remoteApiURL: kDummyURL });
+      await assert.doesNotReject(
+        async() => await sdk.Loki.push(gen())
+      );
     });
   });
 });

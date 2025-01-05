@@ -237,12 +237,16 @@ export class Loki {
     return listSeries.status === "success" ? listSeries.data : [];
   }
 
-  async push(logs: LokiIngestLogs[]): Promise<void> {
+  async push(
+    logs: Iterable<LokiIngestLogs>
+  ): Promise<void> {
     const uri = new URL("loki/api/v1/push", this.remoteApiURL);
     const { headers } = this.credential.httpOptions;
 
     await httpie.post(uri, {
-      body: { streams: logs },
+      body: {
+        streams: Array.from(logs)
+      },
       headers: {
         ...headers,
         "Content-Type": "application/json"
