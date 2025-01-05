@@ -222,7 +222,7 @@ async series<T = Record<string, string>>(
 ): Promise<T[]>
 ```
 
-### push(logs: LokiIngestLogs): Promise< void >
+### push(logs: Iterable< LokiIngestLogs >): Promise< void >
 Send log entries to Loki.
 
 ```ts
