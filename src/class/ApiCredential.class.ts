@@ -14,6 +14,7 @@ export type ApiCredentialAuthorizationOptions = {
 export class ApiCredential {
   private authorization: string | null;
   private userAgent: string | null;
+  private xScopeOrgId: string | null;
 
   static buildAuthorizationHeader(
     authorizationOptions: ApiCredentialAuthorizationOptions
@@ -36,19 +37,22 @@ export class ApiCredential {
 
   constructor(
     authorizationOptions?: ApiCredentialAuthorizationOptions,
-    userAgent?: string
+    userAgent?: string,
+    xScopeOrgId?: string,
   ) {
     this.authorization = authorizationOptions ?
       ApiCredential.buildAuthorizationHeader(authorizationOptions) :
       null;
     this.userAgent = userAgent ?? null;
+    this.xScopeOrgId = xScopeOrgId ?? null;
   }
 
   get httpOptions() {
     return {
       headers: {
         ...(this.authorization === null ? {} : { authorization: this.authorization }),
-        ...(this.userAgent === null ? {} : { "User-Agent": this.userAgent })
+        ...(this.userAgent === null ? {} : { "User-Agent": this.userAgent }),
+        ...(this.xScopeOrgId === null ? {} : { "X-Scope-OrgID": this.xScopeOrgId }),
       }
     };
   }

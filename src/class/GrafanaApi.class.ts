@@ -25,6 +25,11 @@ export interface GrafanaApiOptions {
    */
   userAgent?: string;
   /**
+   * Scope for multi-tenant installations.
+   * @see https://grafana.com/docs/loki/latest/operations/authentication/
+   */
+  xScopeOrgId?: string;
+  /**
    * Remote Grafana root API URL
    */
   remoteApiURL: string | URL;
@@ -38,9 +43,9 @@ export class GrafanaApi {
   public Loki: Loki;
 
   constructor(options: GrafanaApiOptions) {
-    const { authentication, userAgent, remoteApiURL } = options;
+    const { authentication, userAgent, xScopeOrgId, remoteApiURL } = options;
 
-    this.credential = new ApiCredential(authentication, userAgent);
+    this.credential = new ApiCredential(authentication, userAgent, xScopeOrgId);
     this.remoteApiURL = typeof remoteApiURL === "string" ?
       new URL(remoteApiURL) :
       remoteApiURL;
