@@ -78,6 +78,23 @@ describe("ApiCredential", () => {
       });
     });
 
+    it("should inject X-Scope-OrgID header", () => {
+      const token = crypto.randomBytes(4).toString("hex");
+      const xScopeOrgId = "scope";
+
+      const sdk = new ApiCredential({
+        type: "bearer",
+        token
+      }, undefined, xScopeOrgId);
+
+      assert.deepEqual(sdk.httpOptions, {
+        headers: {
+          authorization: `Bearer ${token}`,
+          "X-Scope-OrgID": xScopeOrgId,
+        }
+      });
+    });
+
     it("should return empty headers if no authentication methods is provided", () => {
       const sdk = new ApiCredential();
       assert.deepEqual(sdk.httpOptions, {
