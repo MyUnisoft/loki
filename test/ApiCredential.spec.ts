@@ -80,7 +80,6 @@ describe("ApiCredential", () => {
 
     it("should inject X-Scope-OrgID header", () => {
       const token = crypto.randomBytes(4).toString("hex");
-      const userAgent = "my-super-agent";
       const xScopeOrgId = "scope";
 
       const sdk = new ApiCredential({
