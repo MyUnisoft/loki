@@ -39,10 +39,10 @@
   "author": "GENTILHOMME Thomas <gentilhomme.thomas@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "@openally/config.eslint": "^1.0.0",
+    "@openally/config.eslint": "^2.2.0",
     "@openally/config.typescript": "^1.0.3",
-    "@types/ms": "^0.7.34",
-    "@types/node": "^22.0.0",
+    "@types/ms": "^2.1.0",
+    "@types/node": "^24.5.2",
     "c8": "^10.1.2",
     "glob": "^11.0.0",
     "tsup": "^8.0.2",
