@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "@openally/auto-url": "^2.0.0",
-    "@openally/httpie": "1.1.4",
+    "@openally/httpie": "2.0.0",
     "@sigyn/logql": "^2.2.0",
     "@sigyn/pattern": "^1.1.0",
     "dayjs": "^1.11.10",
